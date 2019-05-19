@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+      xmlns:tools="http://schemas.android.com/tools"
+      tools:showIn="navigation_view">
+
+    <group android:checkableBehavior="single">
+        <item
+                android:id="@+id/nav_library"
+                android:title="Библиотека" android:icon="@drawable/ic_home_black_24dp"/>
+        <item
+                android:id="@+id/nav_favourite"
+                android:title="Избранное" android:icon="@drawable/ic_favorite_border_black_24dp"/>
+        <item
+                android:id="@+id/nav_wishes"
+                android:title="Хочу прочитать" android:icon="@drawable/ic_wishes_black_24dp"/>
+        <item
+                android:id="@+id/nav_finished"
+                android:title="Прочитанное" android:icon="@drawable/ic_finished_black_24dp"/>
+    </group>
+        <item   android:title="Прочее">
+            <menu>
+                <item android:title="Настройки"
+                      android:id="@+id/nav_tool"
+                      android:icon="@drawable/ic_menu_manage" />
+                <item android:title="Выйти"
+                      android:id="@+id/nav_exit" />
+            </menu>
+        </item>
+
+
+
+</menu>

@@ -1,11 +1,13 @@
 package com.example.mybookapplication
 
 import android.Manifest
+import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
+import android.os.Environment
 import android.provider.Settings
 import android.support.design.widget.Snackbar
 import android.support.design.widget.NavigationView
@@ -20,9 +22,11 @@ import android.view.MenuItem
 import android.widget.ListView
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.app_bar_main.*
+import java.io.File
 
 class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener {
 
+    var list = ArrayList<PdfFile>()
     var listView: ListView? = null
     val REQUEST_PERMISSION = 1
 
@@ -48,7 +52,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
           checkPermission()
         } else {
-
+            initViews()
         }
     }
 
@@ -56,7 +60,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         val permissionR = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
         val permissionW = ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
         if (permissionR == PackageManager.PERMISSION_GRANTED && permissionW == PackageManager.PERMISSION_GRANTED) {
-            //initViews()
+            initViews()
         }
         else {
             ActivityCompat.requestPermissions(this,
@@ -69,7 +73,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         when (requestCode) {
             REQUEST_PERMISSION -> {
                 if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    //initViews()
+                    initViews()
                 } else {
                     if (ActivityCompat.shouldShowRequestPermissionRationale(
                             this,
@@ -97,6 +101,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             }
         }
     }
+
     private fun showDialogOK(message: String, okListener: DialogInterface.OnClickListener) {
         AlertDialog.Builder(this)
             .setMessage(message)
@@ -105,6 +110,41 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             .create()
             .show()
     }
+
+    private fun initViews(){
+        val path:String = Environment.getExternalStorageDirectory().absolutePath
+        initList(path)
+        var adapter = adapter(this,list)
+        //listView?.adapter = myAdapter
+        //var adapter = adapter(this,generateData())
+        listView?.adapter = adapter
+        adapter?.notifyDataSetChanged()
+    }
+    fun generateData():ArrayList<PdfFile> {
+        var result = ArrayList<PdfFile>()
+        var f1:PdfFile = PdfFile("a","1")
+        var f2:PdfFile = PdfFile("b","2")
+        result.add(f1)
+        result.add(f2)
+        return result
+    }
+    private fun initList(path: String) {
+        val file = File(path)
+        var fileList: Array<File> = file.listFiles()
+        var fileName: String
+        //file.walk().forEach {
+        for (f in fileList) {
+            if (f.isDirectory) {
+                initList(f.absolutePath)
+            } else {
+                fileName = f.name
+                if (fileName.endsWith(".pdf")) {
+                    list.add(PdfFile(fileName, f.absolutePath))
+                }
+            }
+        }
+    }
+
     override fun onBackPressed() {
         if (drawer_layout.isDrawerOpen(GravityCompat.START)) {
             drawer_layout.closeDrawer(GravityCompat.START)

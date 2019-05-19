@@ -1,3 +1,11 @@
 package com.example.mybookapplication
 
-data class PdfFile(var pdfFileName:String, var pdfFilePath:String)
+class PdfFile {
+    var pdfFileName : String? = null
+    var pdfFilePath : String? = null
+
+    constructor(pdfFileName: String, pdfFilePath: String) {
+        this.pdfFileName = pdfFileName
+        this.pdfFilePath = pdfFilePath
+    }
+}

@@ -1,14 +1,12 @@
 package com.example.mybookapplication
 
 import android.Manifest
-import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
-import android.provider.Settings
 import android.support.design.widget.Snackbar
 import android.support.design.widget.NavigationView
 import android.support.v4.app.ActivityCompat
@@ -28,7 +26,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     var list = ArrayList<PdfFile>()
     var listView: ListView? = null
-    val REQUEST_PERMISSION = 1
+    private val REQUEST_PERMISSION = 1
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -48,7 +46,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
         nav_view.setNavigationItemSelectedListener(this)
 
-        listView = findViewById(R.id.listView) as ListView
+        listView = findViewById(R.id.listView)
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
           checkPermission()
         } else {
@@ -81,7 +79,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                         )
                     ) {
                         showDialogOK("Service Permissions are required for this app",
-                            DialogInterface.OnClickListener { dialog, which ->
+                            DialogInterface.OnClickListener { _, which ->
                                 when (which) {
                                     DialogInterface.BUTTON_POSITIVE -> checkPermission()
                                     DialogInterface.BUTTON_NEGATIVE -> finish()
@@ -90,10 +88,10 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                     } else {
                         val dialog = android.support.v7.app.AlertDialog.Builder(this)
                         dialog.setMessage("You need to give some mandatory permissions to continue. Do you want to go to app settings?")
-                            .setPositiveButton("Yes") { paramDialogInterface, paramInt ->
+                            .setPositiveButton("Yes") { _, _ ->
                                 startActivity(Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:com.example.mybookapplication")))
                             }
-                            .setNegativeButton("Cancel") { paramDialogInterface, paramInt -> finish() }
+                            .setNegativeButton("Cancel") { _, _ -> finish() }
                         dialog.show()
                     }
 
@@ -114,23 +112,20 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     private fun initViews(){
         val path:String = Environment.getExternalStorageDirectory().absolutePath
         initList(path)
-        var adapter = adapter(this,list)
-        //listView?.adapter = myAdapter
-        //var adapter = adapter(this,generateData())
+        val adapter = adapter(this,list)
         listView?.adapter = adapter
-        adapter?.notifyDataSetChanged()
-    }
-    fun generateData():ArrayList<PdfFile> {
-        var result = ArrayList<PdfFile>()
-        var f1:PdfFile = PdfFile("a","1")
-        var f2:PdfFile = PdfFile("b","2")
-        result.add(f1)
-        result.add(f2)
-        return result
+        adapter.notifyDataSetChanged()
+        listView?.setOnItemClickListener {_,_, position,_ ->
+            val selectedFile = list[position]
+            val readIntent = Intent(this, PdfActivity::class.java)
+            readIntent.putExtra("keyname",selectedFile.pdfFileName)
+            readIntent.putExtra("filename",selectedFile.pdfFilePath)
+            startActivity(readIntent)
+        }
     }
     private fun initList(path: String) {
         val file = File(path)
-        var fileList: Array<File> = file.listFiles()
+        val fileList: Array<File> = file.listFiles()
         var fileName: String
         //file.walk().forEach {
         for (f in fileList) {
@@ -188,7 +183,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
             }
             R.id.nav_exit -> {
-
+                finish()
             }
         }
 

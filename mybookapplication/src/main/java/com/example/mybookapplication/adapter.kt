@@ -14,7 +14,7 @@ class adapter(private var activity: Activity, private var items: ArrayList<PdfFi
     private class ViewHolder(view: View?) {
         var txtName:TextView? = null
         init {
-            this.txtName = view?.findViewById<TextView>(R.id.txtFiNameName)
+            this.txtName = view?.findViewById<TextView>(R.id.txtFileName)
         }
     }
 

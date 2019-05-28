@@ -1,13 +1,13 @@
 package com.example.mybookapplication
 
 import android.Manifest
+import android.app.Activity
 import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
-import android.support.design.widget.Snackbar
 import android.support.design.widget.NavigationView
 import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat
@@ -17,9 +17,11 @@ import android.support.v7.app.AlertDialog
 import android.support.v7.app.AppCompatActivity
 import android.view.Menu
 import android.view.MenuItem
-import android.view.View
-import android.widget.ImageButton
 import android.widget.ListView
+import android.widget.Toast
+import com.androidbuffer.kotlinfilepicker.KotConstants
+import com.androidbuffer.kotlinfilepicker.KotRequest
+import com.androidbuffer.kotlinfilepicker.KotResult
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.app_bar_main.*
 import java.io.File
@@ -28,16 +30,27 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     var list = ArrayList<PdfFile>()
     var listView: ListView? = null
+    private lateinit var nameOfFile: String
+    private lateinit var locationOfFile: String
+    private val REQUEST_FILE = 103
     private val REQUEST_PERMISSION = 1
+    private lateinit var adapter:adapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         setSupportActionBar(toolbar)
 
-        fab.setOnClickListener { view ->
-            Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                .setAction("Action", null).show()
+        listView = findViewById(R.id.listView)
+        adapter = adapter(this,list)
+        listView?.adapter = adapter
+
+
+        fab.setOnClickListener {
+            KotRequest.File(this, REQUEST_FILE)
+                .isMultiple(true)
+                .setMimeType(KotConstants.FILE_TYPE_PDF)
+                .pick()
         }
 
         val toggle = ActionBarDrawerToggle(
@@ -48,11 +61,29 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
         nav_view.setNavigationItemSelectedListener(this)
 
-        listView = findViewById(R.id.listView)
+
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
           checkPermission()
-        } else {
+        }
+        else {
             initViews()
+        }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+        if (REQUEST_FILE == requestCode && resultCode == Activity.RESULT_OK) {
+
+            val result = data?.getParcelableArrayListExtra<KotResult>(KotConstants.EXTRA_FILE_RESULTS)
+            result!!.forEach { i ->
+                nameOfFile = i.name.toString()
+                locationOfFile = i.location.toString()
+                list.add(PdfFile(nameOfFile, locationOfFile))
+                adapter.notifyDataSetChanged()
+            }
+            Toast.makeText(this, "Books are added", Toast.LENGTH_LONG)
+                .show()
         }
     }
 
@@ -112,42 +143,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     }
 
     private fun initViews(){
-        val path:String = Environment.getExternalStorageDirectory().absolutePath
-        initList(path)
-        val adapter = adapter(this,list)
-        listView?.adapter = adapter
+        //val path:String = Environment.getExternalStorageDirectory().absolutePath
+        //initList(path)
         adapter.notifyDataSetChanged()
-        //but_fav = findViewById(R.id.favourite)
-        //but_wish = findViewById(R.id.wishes)
-        //but_fin = findViewById(R.id.finished)
-
-        //but_fav.setOnClickListener {
-        //    if (but_fav_add == 0) {
-        //        but_fav.setBackgroundResource(R.drawable.ic_favorite_border_purple_24dp)
-         //       but_fav_add = 1
-        //    } else {
-        //        but_fav.setBackgroundResource(R.drawable.ic_favorite_border_grey_24dp)
-        //        but_fav_add = 0
-        //    }
-        //}
-        //but_wish.setOnClickListener {
-        //    if (but_wish_add == 0) {
-        //        but_wish.setBackgroundResource(R.drawable.ic_wishes_purple_24dp)
-         //       but_wish_add = 1
-        //    } else {
-        //        but_wish.setBackgroundResource(R.drawable.ic_wishes_grey_24dp)
-        //        but_wish_add = 0
-        //    }
-        //}
-        //but_fin.setOnClickListener {
-        //    if (but_fin_add == 0) {
-        //        but_fin.setBackgroundResource(R.drawable.ic_finished_purple_24dp)
-         //       but_fin_add = 1
-        //    } else {
-        //        but_fin.setBackgroundResource(R.drawable.ic_finished_grey_24dp)
-        //        but_fin_add = 0
-        //    }
-        //}
 
         listView?.setOnItemClickListener {_,_, position,_ ->
             val selectedFile = list[position]

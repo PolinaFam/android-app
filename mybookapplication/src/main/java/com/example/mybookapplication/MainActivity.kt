@@ -17,6 +17,8 @@ import android.support.v7.app.AlertDialog
 import android.support.v7.app.AppCompatActivity
 import android.view.Menu
 import android.view.MenuItem
+import android.view.View
+import android.widget.ImageButton
 import android.widget.ListView
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.app_bar_main.*
@@ -115,6 +117,38 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         val adapter = adapter(this,list)
         listView?.adapter = adapter
         adapter.notifyDataSetChanged()
+        //but_fav = findViewById(R.id.favourite)
+        //but_wish = findViewById(R.id.wishes)
+        //but_fin = findViewById(R.id.finished)
+
+        //but_fav.setOnClickListener {
+        //    if (but_fav_add == 0) {
+        //        but_fav.setBackgroundResource(R.drawable.ic_favorite_border_purple_24dp)
+         //       but_fav_add = 1
+        //    } else {
+        //        but_fav.setBackgroundResource(R.drawable.ic_favorite_border_grey_24dp)
+        //        but_fav_add = 0
+        //    }
+        //}
+        //but_wish.setOnClickListener {
+        //    if (but_wish_add == 0) {
+        //        but_wish.setBackgroundResource(R.drawable.ic_wishes_purple_24dp)
+         //       but_wish_add = 1
+        //    } else {
+        //        but_wish.setBackgroundResource(R.drawable.ic_wishes_grey_24dp)
+        //        but_wish_add = 0
+        //    }
+        //}
+        //but_fin.setOnClickListener {
+        //    if (but_fin_add == 0) {
+        //        but_fin.setBackgroundResource(R.drawable.ic_finished_purple_24dp)
+         //       but_fin_add = 1
+        //    } else {
+        //        but_fin.setBackgroundResource(R.drawable.ic_finished_grey_24dp)
+        //        but_fin_add = 0
+        //    }
+        //}
+
         listView?.setOnItemClickListener {_,_, position,_ ->
             val selectedFile = list[position]
             val readIntent = Intent(this, PdfActivity::class.java)
@@ -123,11 +157,11 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             startActivity(readIntent)
         }
     }
+
     private fun initList(path: String) {
         val file = File(path)
         val fileList: Array<File> = file.listFiles()
         var fileName: String
-        //file.walk().forEach {
         for (f in fileList) {
             if (f.isDirectory) {
                 initList(f.absolutePath)

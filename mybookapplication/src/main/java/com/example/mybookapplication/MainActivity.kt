@@ -39,14 +39,13 @@ import java.io.File
 class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener{
 
     var list = ArrayList<FileData>()
-    var f: List<FileData> = emptyList()
    var listView: ListView? = null
     private lateinit var nameOfFile: String
     private lateinit var locationOfFile: String
     private val REQUEST_FILE = 103
     private val REQUEST_PERMISSION = 1
     private val DELETE_ID = 111
-    private lateinit var adapter:adapter2
+    private lateinit var adapter:adapter
     private var db: FileDataBase? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -54,14 +53,13 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         setContentView(R.layout.activity_main)
         setSupportActionBar(toolbar)
 
+        db = FileDataBase.getDB(applicationContext)
         listView = findViewById(R.id.listView)
-        adapter = adapter2(this,list)
+        adapter = adapter(this,list, db)
         listView?.adapter = adapter
         registerForContextMenu(listView)
-
-        db = FileDataBase.getDB(applicationContext)
-        f = db?.fileDataDao()!!.getAll()
-        list.addAll(f)
+        list.clear()
+        list.addAll(db?.fileDataDao()!!.getAll())
         adapter.notifyDataSetChanged()
 
         fab.setOnClickListener {
@@ -97,8 +95,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         {
             val info = item.menuInfo as AdapterView.AdapterContextMenuInfo
             val position = info.position
-            val id = list[position].id
-            db?.fileDataDao()?.deleteFile(db?.fileDataDao()?.findById(id))
+            db?.fileDataDao()?.deleteFile(list[position])
             list.clear()
             list.addAll(db?.fileDataDao()!!.getAll())
             adapter.notifyDataSetChanged()
@@ -124,10 +121,10 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                     Fav = false,
                     HaveRead = false,
                     Wishes = false)
-                    db!!.fileDataDao().insertFile(fileData)
-                        list.clear()
-                        list.addAll(db?.fileDataDao()!!.getAll())
-                        adapter.notifyDataSetChanged()
+                db!!.fileDataDao().insertFile(fileData)
+                list.clear()
+                list.addAll(db?.fileDataDao()!!.getAll())
+                adapter.notifyDataSetChanged()
             }
                 Toast.makeText(this, "Added", Toast.LENGTH_LONG)
                     .show()
@@ -253,16 +250,35 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         // Handle navigation view item clicks here.
         when (item.itemId) {
             R.id.nav_library -> {
-                //
+                list.clear()
+                list.addAll(db?.fileDataDao()!!.getAll())
+                adapter.notifyDataSetChanged()
             }
             R.id.nav_favourite -> {
-                //отобразить layout с книгами из бд, у которых поле favourite=1
+                if (db?.fileDataDao()?.findFav() != null)
+                {
+                    list.clear()
+                    list.addAll(db?.fileDataDao()!!.findFav())
+                }
+                adapter.notifyDataSetChanged()
             }
             R.id.nav_wishes -> {
 
+                if (db?.fileDataDao()?.findWishes() != null)
+                {
+                    list.clear()
+                    list.addAll(db?.fileDataDao()!!.findWishes())
+                }
+                adapter.notifyDataSetChanged()
             }
             R.id.nav_finished -> {
 
+                if (db?.fileDataDao()?.findHaveRead() != null)
+                {
+                    list.clear()
+                    list.addAll(db?.fileDataDao()!!.findHaveRead())
+                }
+                adapter.notifyDataSetChanged()
             }
             R.id.nav_tool -> {
 

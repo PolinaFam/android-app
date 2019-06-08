@@ -8,9 +8,9 @@ interface FileDataDao {
     fun getAll(): List<FileData>
 
     @Query("SELECT * from FileData WHERE id LIKE :id")
-    fun findById(id: Long?): FileData
+    fun findById(id: Long): FileData
 
-    @Query("SELECT * from FileData WHERE Favourite = 1")
+    @Query("SELECT * from FileData WHERE Fav = 1")
     fun findFav(): List<FileData>
 
     @Query("SELECT * from FileData WHERE HaveRead = 1")

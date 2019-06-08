@@ -5,15 +5,15 @@ import android.arch.persistence.room.Entity
 import android.arch.persistence.room.Index
 import android.arch.persistence.room.PrimaryKey
 
-@Entity(indices = [Index(value= "FilePath", unique = true)])
+@Entity(indices = [Index(value="FilePath", unique = true)])
 data class FileData (
-    @ColumnInfo(name="FileName") var FileName:String,
-    @ColumnInfo(name="FilePath") var FilePath:String,
-    @ColumnInfo(name="CurPage") var CurPage:Int?,
-    @ColumnInfo(name="Favourite") var Fav:Boolean,
-    @ColumnInfo(name="HaveRead") var HaveRead:Boolean,
-    @ColumnInfo(name="Wishes") var Wishes:Boolean
+    var FileName:String = "",
+    var FilePath:String = "",
+    var CurPage:Int = 0,
+    var Fav:Boolean = false,
+    var HaveRead:Boolean = false,
+    var Wishes:Boolean = false
     ) {
     @PrimaryKey(autoGenerate = true)
-    var id:Long? = null
+    var id:Long = 0
 }

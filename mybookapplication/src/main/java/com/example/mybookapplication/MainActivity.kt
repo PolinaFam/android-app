@@ -6,6 +6,7 @@ import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.AsyncTask
 import android.os.Bundle
 import android.os.Environment
 import android.support.design.widget.NavigationView
@@ -24,17 +25,27 @@ import com.androidbuffer.kotlinfilepicker.KotRequest
 import com.androidbuffer.kotlinfilepicker.KotResult
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.app_bar_main.*
+import org.jetbrains.anko.doAsync
+import org.jetbrains.anko.toast
+import org.jetbrains.anko.uiThread
+//import kotlinx.coroutines.*
+
 import java.io.File
 
-class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener {
 
-    var list = ArrayList<PdfFile>()
+
+class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener{
+
+    var list = ArrayList<FileData>()
+    var f: List<FileData> = emptyList()
     var listView: ListView? = null
     private lateinit var nameOfFile: String
     private lateinit var locationOfFile: String
     private val REQUEST_FILE = 103
     private val REQUEST_PERMISSION = 1
-    private lateinit var adapter:adapter
+    //private lateinit var adapter:adapter
+    private lateinit var adapter:adapter2
+    private var db: FileDataBase? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -42,10 +53,19 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         setSupportActionBar(toolbar)
 
         listView = findViewById(R.id.listView)
-        adapter = adapter(this,list)
+        listView?.setLongClickable(true)
+        adapter = adapter2(this,list)
         listView?.adapter = adapter
 
-
+        db = FileDataBase.getDB(applicationContext)
+        //doAsync {
+//        FileDataBase.destroyDB()
+            f = db?.fileDataDao()!!.getAll()
+        //    uiThread {
+                list.addAll(f)
+                adapter.notifyDataSetChanged()
+        //    }
+        //}
         fab.setOnClickListener {
             KotRequest.File(this, REQUEST_FILE)
                 .isMultiple(true)
@@ -79,14 +99,29 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             result!!.forEach { i ->
                 nameOfFile = i.name.toString()
                 locationOfFile = i.location.toString()
-                list.add(PdfFile(nameOfFile, locationOfFile))
-                adapter.notifyDataSetChanged()
+                val fileData = FileData(FileName=i.name.toString(),
+                    FilePath = i.location.toString(),
+                    CurPage = 0,
+                    Fav = false,
+                    HaveRead = false,
+                    Wishes = false)
+                    db!!.fileDataDao().insertFile(fileData)
+                        list.clear()
+                        list.addAll(db?.fileDataDao()!!.getAll())
+                        adapter.notifyDataSetChanged()
+
+                //list.add(fileData)
+                //list = ArrayList(db?.fileDataDao()!!.getAll())
+                //list.add(PdfFile(nameOfFile, locationOfFile)) //здесь нужно добавить в бд, если такой там еще нет, а не в список
             }
-            Toast.makeText(this, "Books are added", Toast.LENGTH_LONG)
-                .show()
+                Toast.makeText(this, "Added", Toast.LENGTH_LONG)
+                    .show()
         }
     }
 
+
+
+    //проверка доступа
     private fun checkPermission() {
         val permissionR = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
         val permissionW = ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
@@ -145,17 +180,17 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     private fun initViews(){
         //val path:String = Environment.getExternalStorageDirectory().absolutePath
         //initList(path)
-        adapter.notifyDataSetChanged()
 
         listView?.setOnItemClickListener {_,_, position,_ ->
             val selectedFile = list[position]
             val readIntent = Intent(this, PdfActivity::class.java)
-            readIntent.putExtra("keyname",selectedFile.pdfFileName)
-            readIntent.putExtra("filename",selectedFile.pdfFilePath)
+            readIntent.putExtra("keyname",selectedFile.FileName)
+            readIntent.putExtra("filename",selectedFile.FilePath)
             startActivity(readIntent)
         }
     }
 
+    //возможно оставить функцию для сканирования всех pdf файлов
     private fun initList(path: String) {
         val file = File(path)
         val fileList: Array<File> = file.listFiles()
@@ -166,7 +201,12 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             } else {
                 fileName = f.name
                 if (fileName.endsWith(".pdf")) {
-                    list.add(PdfFile(fileName, f.absolutePath))
+                    list.add(FileData(FileName=fileName,
+                        FilePath = f.absolutePath,
+                        CurPage = 0,
+                        Fav = false,
+                        HaveRead = false,
+                        Wishes = false))
                 }
             }
         }
@@ -200,10 +240,10 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         // Handle navigation view item clicks here.
         when (item.itemId) {
             R.id.nav_library -> {
-                // Handle the camera action
+                //
             }
             R.id.nav_favourite -> {
-
+                //отобразить layout с книгами из бд, у которых поле favourite=1
             }
             R.id.nav_wishes -> {
 

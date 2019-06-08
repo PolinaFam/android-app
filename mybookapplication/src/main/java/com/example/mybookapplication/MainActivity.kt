@@ -16,8 +16,11 @@ import android.support.v4.view.GravityCompat
 import android.support.v7.app.ActionBarDrawerToggle
 import android.support.v7.app.AlertDialog
 import android.support.v7.app.AppCompatActivity
+import android.view.ContextMenu
 import android.view.Menu
 import android.view.MenuItem
+import android.view.View
+import android.widget.AdapterView
 import android.widget.ListView
 import android.widget.Toast
 import com.androidbuffer.kotlinfilepicker.KotConstants
@@ -28,7 +31,6 @@ import kotlinx.android.synthetic.main.app_bar_main.*
 import org.jetbrains.anko.doAsync
 import org.jetbrains.anko.toast
 import org.jetbrains.anko.uiThread
-//import kotlinx.coroutines.*
 
 import java.io.File
 
@@ -38,12 +40,12 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     var list = ArrayList<FileData>()
     var f: List<FileData> = emptyList()
-    var listView: ListView? = null
+   var listView: ListView? = null
     private lateinit var nameOfFile: String
     private lateinit var locationOfFile: String
     private val REQUEST_FILE = 103
     private val REQUEST_PERMISSION = 1
-    //private lateinit var adapter:adapter
+    private val DELETE_ID = 111
     private lateinit var adapter:adapter2
     private var db: FileDataBase? = null
 
@@ -53,19 +55,15 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         setSupportActionBar(toolbar)
 
         listView = findViewById(R.id.listView)
-        listView?.setLongClickable(true)
         adapter = adapter2(this,list)
         listView?.adapter = adapter
+        registerForContextMenu(listView)
 
         db = FileDataBase.getDB(applicationContext)
-        //doAsync {
-//        FileDataBase.destroyDB()
-            f = db?.fileDataDao()!!.getAll()
-        //    uiThread {
-                list.addAll(f)
-                adapter.notifyDataSetChanged()
-        //    }
-        //}
+        f = db?.fileDataDao()!!.getAll()
+        list.addAll(f)
+        adapter.notifyDataSetChanged()
+
         fab.setOnClickListener {
             KotRequest.File(this, REQUEST_FILE)
                 .isMultiple(true)
@@ -81,13 +79,34 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
         nav_view.setNavigationItemSelectedListener(this)
 
-
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
           checkPermission()
         }
         else {
             initViews()
         }
+    }
+
+    override fun onCreateContextMenu(menu: ContextMenu, v: View?, menuInfo: ContextMenu.ContextMenuInfo?) {
+        super.onCreateContextMenu(menu, v, menuInfo)
+        menu.add(0,DELETE_ID,0,"Delete")
+    }
+
+    override fun onContextItemSelected(item: MenuItem): Boolean {
+        if(item.itemId == DELETE_ID)
+        {
+            val info = item.menuInfo as AdapterView.AdapterContextMenuInfo
+            val position = info.position
+            val id = list[position].id
+            db?.fileDataDao()?.deleteFile(db?.fileDataDao()?.findById(id))
+            list.clear()
+            list.addAll(db?.fileDataDao()!!.getAll())
+            adapter.notifyDataSetChanged()
+            Toast.makeText(this, "Deleted.", Toast.LENGTH_LONG)
+                .show()
+            return true
+        }
+        return super.onContextItemSelected(item)
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -109,17 +128,11 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                         list.clear()
                         list.addAll(db?.fileDataDao()!!.getAll())
                         adapter.notifyDataSetChanged()
-
-                //list.add(fileData)
-                //list = ArrayList(db?.fileDataDao()!!.getAll())
-                //list.add(PdfFile(nameOfFile, locationOfFile)) //здесь нужно добавить в бд, если такой там еще нет, а не в список
             }
                 Toast.makeText(this, "Added", Toast.LENGTH_LONG)
                     .show()
         }
     }
-
-
 
     //проверка доступа
     private fun checkPermission() {

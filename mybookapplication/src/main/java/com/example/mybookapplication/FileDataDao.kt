@@ -8,7 +8,7 @@ interface FileDataDao {
     fun getAll(): List<FileData>
 
     @Query("SELECT * from FileData WHERE id LIKE :id")
-    fun findById(id: Int): FileData
+    fun findById(id: Long?): FileData
 
     @Query("SELECT * from FileData WHERE Favourite = 1")
     fun findFav(): List<FileData>
@@ -23,7 +23,7 @@ interface FileDataDao {
     fun insertFile(file: FileData)
 
     @Delete
-    fun deleteFile(file: FileData)
+    fun deleteFile(file: FileData?)
 
     @Query("DELETE from FileData")
     fun deleteAll()

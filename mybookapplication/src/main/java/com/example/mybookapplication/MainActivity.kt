@@ -237,11 +237,23 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
         when (item.itemId) {
             R.id.action_settings -> return true
+            R.id.menuSortName -> {
+                item.setChecked(true)
+                list.clear()
+                list.addAll(db?.fileDataDao()!!.sortName())
+                adapter.notifyDataSetChanged() //это нужно будет поменять!!!
+                return true
+            }
+            R.id.menuSortSize -> {
+                item.setChecked(true)
+                return true
+            }
+            R.id.menuSortDate -> {
+                item.setChecked(true)
+                return true
+            }
             else -> return super.onOptionsItemSelected(item)
         }
     }

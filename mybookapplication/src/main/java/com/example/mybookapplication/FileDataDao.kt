@@ -19,6 +19,9 @@ interface FileDataDao {
     @Query("SELECT * from FileData WHERE Wishes = 1")
     fun findWishes(): List<FileData>
 
+    @Query("SELECT * from FileData ORDER BY FileName ASC")
+    fun sortName(): List<FileData>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertFile(file: FileData)
 

@@ -1,8 +1,41 @@
 <?xml version="1.0" encoding="utf-8"?>
+
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
       xmlns:app="http://schemas.android.com/apk/res-auto">
     <item android:id="@+id/action_settings"
           android:title="@string/action_settings"
-          android:orderInCategory="100"
+          android:orderInCategory="101"
           app:showAsAction="never"/>
+    <item
+            android:id="@+id/menuSort"
+            android:orderInCategory="20"
+            app:showAsAction="ifRoom"
+            android:title=""
+            android:icon="@drawable/ic_sort_white_24dp">
+
+        <menu>
+            <group android:checkableBehavior="single">
+
+                <item
+                        android:id="@+id/menuSortName"
+                        android:orderInCategory="100"
+                        app:showAsAction="never"
+                        android:title="@string/sort_name"/>
+
+                <item
+                        android:id="@+id/menuSortSize"
+                        android:orderInCategory="200"
+                        app:showAsAction="never"
+                        android:title="@string/sort_size"/>
+
+                <item
+                        android:id="@+id/menuSortDate"
+                        android:orderInCategory="300"
+                        app:showAsAction="never"
+                        android:title="@string/sort_date"/>
+
+            </group>
+        </menu>
+
+    </item>
 </menu>

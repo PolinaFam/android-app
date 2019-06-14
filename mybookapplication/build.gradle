@@ -40,12 +40,22 @@ dependencies {
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
 
     implementation "android.arch.lifecycle:livedata:1.1.1"
-    implementation "android.arch.lifecycle:extensions:1.1.1"
-    //implementation "android.arch.lifecycle:viewmodel:1.1.1"
-
-    implementation "android.arch.persistence.room:runtime:1.1.1"// use kapt for Kotlin
-
+    //implementation 'com.android.support:mediarouter-v7:28.0.0'
     annotationProcessor  "android.arch.persistence.room:compiler:1.1.1"
+
+    // Room components
+    implementation "android.arch.persistence.room:runtime:1.1.1"
+
     kapt "android.arch.persistence.room:compiler:1.1.1"
-    implementation 'com.android.support:mediarouter-v7:28.0.0'
+    androidTestImplementation "android.arch.persistence.room:testing:1.1.1"
+
+    // Lifecycle components
+    implementation "android.arch.lifecycle:extensions:1.1.1"
+    kapt "android.arch.lifecycle:compiler:1.1.1"
+    testImplementation "android.arch.core:core-testing:1.1.1"
+    // ViewModel Kotlin support
+    implementation "android.arch.lifecycle:viewmodel:1.1.1"
+    // Coroutines
+    api "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.2.1"
+    api "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.2.1"
 }

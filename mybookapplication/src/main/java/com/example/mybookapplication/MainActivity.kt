@@ -2,11 +2,13 @@ package com.example.mybookapplication
 
 import android.Manifest
 import android.app.Activity
+import android.arch.lifecycle.LiveData
+import android.arch.lifecycle.Observer
+import android.arch.lifecycle.ViewModelProviders
 import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
-import android.os.AsyncTask
 import android.os.Bundle
 import android.os.Environment
 import android.support.design.widget.NavigationView
@@ -23,41 +25,43 @@ import android.view.View
 import android.widget.AdapterView
 import android.widget.ListView
 import android.widget.Toast
-import com.androidbuffer.kotlinfilepicker.KotConstants
-import com.androidbuffer.kotlinfilepicker.KotRequest
-import com.androidbuffer.kotlinfilepicker.KotResult
+import com.androidbuffer.kotlinfilepicker.*
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.app_bar_main.*
 import org.jetbrains.anko.doAsync
 import org.jetbrains.anko.toast
 import org.jetbrains.anko.uiThread
-
-import java.io.File
-
+import java.util.*
 
 
 class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener{
 
     var list = ArrayList<FileData>()
    var listView: ListView? = null
-    private lateinit var nameOfFile: String
-    private lateinit var locationOfFile: String
     private val REQUEST_FILE = 103
     private val REQUEST_PERMISSION = 1
     private val DELETE_ID = 111
     private lateinit var adapter:adapter
     private var db: FileDataBase? = null
+    //lateinit var viewModel: ListViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         setSupportActionBar(toolbar)
 
+
+        //viewModel = ViewModelProviders.of(this).get(ListViewModel::class.java)
         db = FileDataBase.getDB(applicationContext)
         listView = findViewById(R.id.listView)
         adapter = adapter(this,list, db)
         listView?.adapter = adapter
         registerForContextMenu(listView)
+
+        //viewModel.allFiles?.observe(this@MainActivity, Observer { allFiles ->
+            //allFiles?.let {updateView(it)}
+        //})
+
         list.clear()
         list.addAll(db?.fileDataDao()!!.getAll())
         adapter.notifyDataSetChanged()
@@ -113,11 +117,11 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
             val result = data?.getParcelableArrayListExtra<KotResult>(KotConstants.EXTRA_FILE_RESULTS)
             result!!.forEach { i ->
-                nameOfFile = i.name.toString()
-                locationOfFile = i.location.toString()
                 val fileData = FileData(FileName=i.name.toString(),
                     FilePath = i.location.toString(),
                     CurPage = 0,
+                    Size = i.size!!.toString(),
+                    DateOfAdding = Calendar.getInstance().time,
                     Fav = false,
                     HaveRead = false,
                     Wishes = false)
@@ -125,9 +129,10 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 list.clear()
                 list.addAll(db?.fileDataDao()!!.getAll())
                 adapter.notifyDataSetChanged()
+                Toast.makeText(this, "Added "+fileData.DateOfAdding, Toast.LENGTH_LONG)
+                .show()
             }
-                Toast.makeText(this, "Added", Toast.LENGTH_LONG)
-                    .show()
+
         }
     }
 
@@ -201,7 +206,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     }
 
     //возможно оставить функцию для сканирования всех pdf файлов
-    private fun initList(path: String) {
+    /*private fun initList(path: String) {
         val file = File(path)
         val fileList: Array<File> = file.listFiles()
         var fileName: String
@@ -220,7 +225,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 }
             }
         }
-    }
+    }*/
 
     override fun onBackPressed() {
         if (drawer_layout.isDrawerOpen(GravityCompat.START)) {
@@ -252,6 +257,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             }
             R.id.menuSortDate -> {
                 item.setChecked(true)
+                list.clear()
+                list.addAll(db?.fileDataDao()!!.sortDate())
+                adapter.notifyDataSetChanged()
                 return true
             }
             else -> return super.onOptionsItemSelected(item)

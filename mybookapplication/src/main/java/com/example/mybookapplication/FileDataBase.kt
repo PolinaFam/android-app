@@ -3,30 +3,32 @@ package com.example.mybookapplication
 import android.arch.persistence.room.Database
 import android.arch.persistence.room.Room
 import android.arch.persistence.room.RoomDatabase
+import android.arch.persistence.room.TypeConverters
 import android.content.Context
 
 @Database(entities = [(FileData::class)], version = 1)
-abstract class FileDataBase : RoomDatabase() {
-
+@TypeConverters(DateConverter::class)
+public abstract class FileDataBase : RoomDatabase() {
     abstract fun fileDataDao() : FileDataDao
 
     companion object {
-        var INSTANCE:FileDataBase? = null
+        @Volatile
+        private var INSTANCE:FileDataBase? = null
 
-        fun getDB(context: Context):FileDataBase? {
-            if (INSTANCE == null) {
-                synchronized(FileDataBase::class) {
-                    INSTANCE = Room.databaseBuilder(context.getApplicationContext(),
-                        FileDataBase::class.java,"file.db")
-                        .allowMainThreadQueries()
-                        .build()
-                }
+        fun getDB(context: Context):FileDataBase {
+            val tempInstance = INSTANCE
+            if (tempInstance != null) {
+                return tempInstance
             }
-            return INSTANCE
-        }
-
-        fun destroyDB() {
-            INSTANCE = null
+            synchronized(this) {
+                val instance = Room.databaseBuilder(
+                    context.applicationContext,
+                    FileDataBase::class.java,
+                    "file.db")
+                    .build()
+                INSTANCE = instance
+                return instance
+            }
         }
     }
 }

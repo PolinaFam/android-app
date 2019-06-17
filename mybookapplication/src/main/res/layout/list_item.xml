@@ -2,69 +2,72 @@
 
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
               android:layout_width="match_parent"
-              android:layout_height="match_parent"
+              android:layout_height="wrap_content"
               android:orientation="vertical"
               android:descendantFocusability="blocksDescendants"
-              android:padding="5dp">
+              android:layout_margin="5dp">
 
-    <LinearLayout android:layout_width="match_parent"
-                  android:layout_height="wrap_content"
-                  android:orientation="vertical">
-        <TextView
-                android:id="@+id/txtFileName"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:paddingBottom="5dp"
-                android:textColor="#000000"
-                android:textSize="16sp"
-        />
-        <TextView
-                android:id="@+id/txtFileAuthor"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Author"
-                android:textColor="@android:color/darker_gray"
-                android:textSize="16sp"
-        />
-    </LinearLayout>
-
-    <LinearLayout android:layout_width="match_parent"
-                  android:layout_height="wrap_content"
-                  android:orientation="horizontal">
-        <ProgressBar android:id="@+id/progressBar"
-                     style="?android:attr/progressBarStyleHorizontal"
-                     android:max="100"
-                     android:progress="10"
-                     android:layout_weight="10"
-                     android:layout_width="wrap_content"
-                     android:layout_height="wrap_content"
-                     android:layout_gravity="center_vertical"/>
-        <ImageButton
-                android:id="@+id/favourite"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:contentDescription="@null"
-                android:background="@null"
-                android:layout_weight="1"
-                android:layout_gravity="center_vertical"
-                android:src="@drawable/ic_favorite_border_grey_24dp"/>
-        <ImageButton
-                android:id="@+id/wishes"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:contentDescription="@null"
-                android:background="@null"
-                android:layout_weight="1"
-                android:layout_gravity="center_vertical"
-                android:src="@drawable/ic_wishes_grey_24dp"/>
-        <ImageButton
-                android:id="@+id/finished"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:contentDescription="@null"
-                android:background="@null"
-                android:layout_weight="1"
-                android:layout_gravity="center_vertical"
-                android:src="@drawable/ic_finished_grey_24dp"/>
-    </LinearLayout>
+    <androidx.cardview.widget.CardView android:layout_width="match_parent"
+                                       android:layout_height="wrap_content">
+        <RelativeLayout android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="4dp">
+            <TextView
+                    android:id="@+id/txtFileName"
+                    android:text="Name"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingBottom="5dp"
+                    android:textColor="#000000"
+                    android:textSize="16sp"/>
+            <TextView
+                    android:id="@+id/txtFileAuthor"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Author"
+                    android:textColor="@android:color/darker_gray"
+                    android:textSize="16sp"
+                    android:layout_below="@id/txtFileName"/>
+            <LinearLayout android:layout_width="match_parent"
+                          android:layout_height="wrap_content"
+                          android:orientation="horizontal"
+                          android:layout_below="@id/txtFileAuthor">
+                <ProgressBar android:id="@+id/progressBar"
+                             style="?android:attr/progressBarStyleHorizontal"
+                             android:max="100"
+                             android:progress="0"
+                             android:layout_weight="10"
+                             android:layout_width="wrap_content"
+                             android:layout_height="wrap_content"
+                             android:layout_gravity="center_vertical"/>
+                <ImageButton
+                        android:id="@+id/favourite"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:contentDescription="@null"
+                        android:background="@null"
+                        android:layout_weight="1"
+                        android:layout_gravity="center_vertical"
+                        android:src="@drawable/ic_favorite_border_grey_24dp"/>
+                <ImageButton
+                        android:id="@+id/wishes"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:contentDescription="@null"
+                        android:background="@null"
+                        android:layout_weight="1"
+                        android:layout_gravity="center_vertical"
+                        android:src="@drawable/ic_wishes_grey_24dp"/>
+                <ImageButton
+                        android:id="@+id/finished"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:contentDescription="@null"
+                        android:background="@null"
+                        android:layout_weight="1"
+                        android:layout_gravity="center_vertical"
+                        android:src="@drawable/ic_finished_grey_24dp"/>
+            </LinearLayout>
+        </RelativeLayout>
+    </androidx.cardview.widget.CardView>
 </LinearLayout>

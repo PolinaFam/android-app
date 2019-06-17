@@ -1,70 +1,76 @@
 package com.example.mybookapplication
 
-import android.Manifest
 import android.app.Activity
-import android.arch.lifecycle.LiveData
-import android.arch.lifecycle.Observer
-import android.arch.lifecycle.ViewModelProviders
-import android.content.DialogInterface
+import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProviders
 import android.content.Intent
-import android.content.pm.PackageManager
-import android.net.Uri
+import android.graphics.pdf.PdfRenderer
 import android.os.Bundle
-import android.os.Environment
-import android.support.design.widget.NavigationView
-import android.support.v4.app.ActivityCompat
-import android.support.v4.content.ContextCompat
-import android.support.v4.view.GravityCompat
-import android.support.v7.app.ActionBarDrawerToggle
-import android.support.v7.app.AlertDialog
-import android.support.v7.app.AppCompatActivity
-import android.view.ContextMenu
+import android.os.ParcelFileDescriptor
+import com.google.android.material.navigation.NavigationView
+import androidx.core.view.GravityCompat
+import androidx.appcompat.app.ActionBarDrawerToggle
+import androidx.appcompat.app.AppCompatActivity
 import android.view.Menu
 import android.view.MenuItem
-import android.view.View
-import android.widget.AdapterView
-import android.widget.ListView
 import android.widget.Toast
+import androidx.recyclerview.widget.DividerItemDecoration
+import androidx.recyclerview.widget.ItemTouchHelper
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.androidbuffer.kotlinfilepicker.*
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.app_bar_main.*
-import org.jetbrains.anko.doAsync
-import org.jetbrains.anko.toast
-import org.jetbrains.anko.uiThread
+import java.io.File
 import java.util.*
 
 
-class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener{
+class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener, FileListAdapter.OnBtnClickListener {
 
-    var list = ArrayList<FileData>()
-   var listView: ListView? = null
+    //private val REQUEST_PERMISSION = 1
+    private lateinit var viewModel: ListViewModel
     private val REQUEST_FILE = 103
-    private val REQUEST_PERMISSION = 1
-    private val DELETE_ID = 111
-    private lateinit var adapter:adapter
-    private var db: FileDataBase? = null
-    //lateinit var viewModel: ListViewModel
+    private val REQUEST_PAGE = 1
+    private lateinit var adapter:FileListAdapter
+
+    override fun onFavButtonClick(file:FileData) {
+        file.Fav = !file.Fav
+        viewModel.update(file)
+    }
+    override fun onWishButtonClick(file:FileData) {
+        file.Wishes = !file.Wishes
+        viewModel.update(file)
+    }
+    override fun onFinishedButtonClick(file:FileData) {
+        file.HaveRead = !file.HaveRead
+        viewModel.update(file)
+    }
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         setSupportActionBar(toolbar)
 
+        val recyclerView = findViewById<RecyclerView>(R.id.recyclerview)
+        adapter = FileListAdapter(this, this)
+        recyclerView.addItemDecoration(DividerItemDecoration(this, DividerItemDecoration.VERTICAL))
+        recyclerView.adapter = adapter
+        recyclerView.layoutManager = LinearLayoutManager(this)
 
-        //viewModel = ViewModelProviders.of(this).get(ListViewModel::class.java)
-        db = FileDataBase.getDB(applicationContext)
-        listView = findViewById(R.id.listView)
-        adapter = adapter(this,list, db)
-        listView?.adapter = adapter
-        registerForContextMenu(listView)
+        val swipeHandler = object : SwipeToDeleteCallback(this) {
+            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
+                val delFile = adapter.getItem(viewHolder.adapterPosition)
+                viewModel.delete(delFile)
+            }
+        }
+        val itemTouchHelper = ItemTouchHelper(swipeHandler)
+        itemTouchHelper.attachToRecyclerView(recyclerView)
 
-        //viewModel.allFiles?.observe(this@MainActivity, Observer { allFiles ->
-            //allFiles?.let {updateView(it)}
-        //})
-
-        list.clear()
-        list.addAll(db?.fileDataDao()!!.getAll())
-        adapter.notifyDataSetChanged()
+        viewModel = ViewModelProviders.of(this).get(ListViewModel::class.java)
+        viewModel.allFiles.observe(this,Observer {
+            files -> files?.let { adapter.setFiles(it)}
+        })
 
         fab.setOnClickListener {
             KotRequest.File(this, REQUEST_FILE)
@@ -72,7 +78,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 .setMimeType(KotConstants.FILE_TYPE_PDF)
                 .pick()
         }
-
         val toggle = ActionBarDrawerToggle(
             this, drawer_layout, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close
         )
@@ -80,63 +85,51 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         toggle.syncState()
 
         nav_view.setNavigationItemSelectedListener(this)
-
+/*
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
           checkPermission()
         }
         else {
             initViews()
-        }
-    }
-
-    override fun onCreateContextMenu(menu: ContextMenu, v: View?, menuInfo: ContextMenu.ContextMenuInfo?) {
-        super.onCreateContextMenu(menu, v, menuInfo)
-        menu.add(0,DELETE_ID,0,"Delete")
-    }
-
-    override fun onContextItemSelected(item: MenuItem): Boolean {
-        if(item.itemId == DELETE_ID)
-        {
-            val info = item.menuInfo as AdapterView.AdapterContextMenuInfo
-            val position = info.position
-            db?.fileDataDao()?.deleteFile(list[position])
-            list.clear()
-            list.addAll(db?.fileDataDao()!!.getAll())
-            adapter.notifyDataSetChanged()
-            Toast.makeText(this, "Deleted.", Toast.LENGTH_LONG)
-                .show()
-            return true
-        }
-        return super.onContextItemSelected(item)
+        }*/
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
 
         if (REQUEST_FILE == requestCode && resultCode == Activity.RESULT_OK) {
+           val result = data?.getParcelableArrayListExtra<KotResult>(KotConstants.EXTRA_FILE_RESULTS)
 
-            val result = data?.getParcelableArrayListExtra<KotResult>(KotConstants.EXTRA_FILE_RESULTS)
             result!!.forEach { i ->
+                val file = File(i.location.toString())
+                val descriptor = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
+                val pdfRenderer = PdfRenderer(descriptor)
                 val fileData = FileData(FileName=i.name.toString(),
                     FilePath = i.location.toString(),
                     CurPage = 0,
+                    Pages = pdfRenderer.pageCount,
                     Size = i.size!!.toString(),
                     DateOfAdding = Calendar.getInstance().time,
                     Fav = false,
                     HaveRead = false,
                     Wishes = false)
-                db!!.fileDataDao().insertFile(fileData)
-                list.clear()
-                list.addAll(db?.fileDataDao()!!.getAll())
-                adapter.notifyDataSetChanged()
-                Toast.makeText(this, "Added "+fileData.DateOfAdding, Toast.LENGTH_LONG)
+                viewModel.insert(fileData)
+                pdfRenderer.close()
+                descriptor.close()
+                Toast.makeText(this, "Added.", Toast.LENGTH_LONG)
                 .show()
             }
-
+        }
+        if (REQUEST_PAGE == requestCode && resultCode == Activity.RESULT_OK) {
+            val resultIdStr = data?.extras?.getString("fileId")
+            val resultId = resultIdStr!!.toLong()
+            val resultPageStr = data.extras?.getString("currentPage")
+            val resultPage = resultPageStr!!.toInt()
+            viewModel.findForUpdate(resultId,resultPage)
         }
     }
 
-    //проверка доступа
+  /*  //проверка доступа
     private fun checkPermission() {
         val permissionR = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
         val permissionW = ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
@@ -169,7 +162,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                                 }
                             })
                     } else {
-                        val dialog = android.support.v7.app.AlertDialog.Builder(this)
+                        val dialog = androidx.appcompat.app.AlertDialog.Builder(this)
                         dialog.setMessage("You need to give some mandatory permissions to continue. Do you want to go to app settings?")
                             .setPositiveButton("Yes") { _, _ ->
                                 startActivity(Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:com.example.mybookapplication")))
@@ -226,7 +219,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             }
         }
     }*/
-
+*/
     override fun onBackPressed() {
         if (drawer_layout.isDrawerOpen(GravityCompat.START)) {
             drawer_layout.closeDrawer(GravityCompat.START)
@@ -236,69 +229,45 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        // Inflate the menu; this adds items to the action bar if it is present.
         menuInflater.inflate(R.menu.main, menu)
         return true
     }
-
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             R.id.action_settings -> return true
             R.id.menuSortName -> {
-                item.setChecked(true)
+                /*item.setChecked(true)
                 list.clear()
                 list.addAll(db?.fileDataDao()!!.sortName())
-                adapter.notifyDataSetChanged() //это нужно будет поменять!!!
+                adapter.notifyDataSetChanged() //это нужно будет поменять!!!*/
                 return true
             }
             R.id.menuSortSize -> {
-                item.setChecked(true)
+                //item.setChecked(true)
                 return true
             }
             R.id.menuSortDate -> {
-                item.setChecked(true)
+                /*item.setChecked(true)
                 list.clear()
                 list.addAll(db?.fileDataDao()!!.sortDate())
-                adapter.notifyDataSetChanged()
+                adapter.notifyDataSetChanged()*/
                 return true
             }
             else -> return super.onOptionsItemSelected(item)
         }
     }
-
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
-        // Handle navigation view item clicks here.
         when (item.itemId) {
             R.id.nav_library -> {
-                list.clear()
-                list.addAll(db?.fileDataDao()!!.getAll())
-                adapter.notifyDataSetChanged()
             }
             R.id.nav_favourite -> {
-                if (db?.fileDataDao()?.findFav() != null)
-                {
-                    list.clear()
-                    list.addAll(db?.fileDataDao()!!.findFav())
-                }
-                adapter.notifyDataSetChanged()
+                adapter.setFilterFiles("Fav")
             }
             R.id.nav_wishes -> {
-
-                if (db?.fileDataDao()?.findWishes() != null)
-                {
-                    list.clear()
-                    list.addAll(db?.fileDataDao()!!.findWishes())
-                }
-                adapter.notifyDataSetChanged()
+                adapter.setFilterFiles("Wish")
             }
             R.id.nav_finished -> {
-
-                if (db?.fileDataDao()?.findHaveRead() != null)
-                {
-                    list.clear()
-                    list.addAll(db?.fileDataDao()!!.findHaveRead())
-                }
-                adapter.notifyDataSetChanged()
+                adapter.setFilterFiles("Fin")
             }
             R.id.nav_tool -> {
 
@@ -307,7 +276,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 finish()
             }
         }
-
         drawer_layout.closeDrawer(GravityCompat.START)
         return true
     }

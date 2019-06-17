@@ -1,7 +1,7 @@
 package com.example.mybookapplication
 
-import android.arch.lifecycle.LiveData
-import android.arch.persistence.room.*
+import androidx.lifecycle.LiveData
+import androidx.room.*
 
 @Dao
 interface FileDataDao {
@@ -30,8 +30,8 @@ interface FileDataDao {
     @Query("SELECT * from FileData ORDER BY DateOfAdding DESC")
     fun sortDate(): List<FileData>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insertFile(file: FileData)
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertFile(file: FileData)
 
     @Delete
     fun deleteFile(file: FileData?)

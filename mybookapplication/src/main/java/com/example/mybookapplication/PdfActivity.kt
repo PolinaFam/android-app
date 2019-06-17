@@ -1,6 +1,8 @@
 package com.example.mybookapplication
 
-import android.support.v7.app.AppCompatActivity
+import android.app.Activity
+import android.content.Intent
+import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.View
 import android.graphics.pdf.PdfRenderer
@@ -11,14 +13,13 @@ import android.widget.Toast
 import java.lang.Exception
 import android.os.ParcelFileDescriptor
 import android.util.DisplayMetrics
-import android.util.Log
 import android.widget.ImageButton
 import android.widget.ImageView
 import java.io.File
 import java.io.IOException
 
 class PdfActivity : AppCompatActivity() {
-    private lateinit var pdfRenderer:PdfRenderer
+   private lateinit var pdfRenderer:PdfRenderer
     private lateinit var curPage:PdfRenderer.Page
     private lateinit var descriptor: ParcelFileDescriptor
     private lateinit var imgView: ImageView
@@ -29,6 +30,7 @@ class PdfActivity : AppCompatActivity() {
     private var currentZoomLevel:Float = 5.0f
     private var currentPage: Int = 0
     private var path: String? = null
+    private var fileId:Long = 0
     private val CURRENT_PAGE = "current_page_index"
     val displayMetrics = DisplayMetrics()
 
@@ -36,9 +38,13 @@ class PdfActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_pdf)
         path = intent.extras?.getString("filename")
-        setTitle(intent.extras?.getString("keyname"));
+        setTitle(intent.extras?.getString("keyname"))
+        val currentPageStr = intent.extras?.getString("currentPage")
+        currentPage = currentPageStr!!.toInt()
+        val fileIdStr = intent.extras?.getString("fileId")
+        fileId = fileIdStr!!.toLong()
         if (savedInstanceState != null) {
-            currentPage = savedInstanceState.getInt(CURRENT_PAGE,0)
+            currentPage = savedInstanceState.getInt(CURRENT_PAGE, 0)
         }
 
         windowManager.defaultDisplay.getMetrics(displayMetrics)
@@ -57,7 +63,7 @@ class PdfActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
-        try {
+       try {
             openPdfRenderer()
             displayPage(currentPage)
         } catch (e:Exception) {
@@ -67,7 +73,7 @@ class PdfActivity : AppCompatActivity() {
     }
 
     override fun onStop(){
-        try {
+       try {
             closePdfRenderer()
         } catch (e: IOException) {
             Toast.makeText(this,"Close Error",Toast.LENGTH_SHORT)
@@ -76,8 +82,16 @@ class PdfActivity : AppCompatActivity() {
         super.onStop()
     }
 
+    override fun onBackPressed() {
+        val intent = Intent()
+        intent.putExtra("currentPage", currentPage.toString())
+        intent.putExtra("fileId",fileId.toString())
+        setResult(Activity.RESULT_OK,intent)
+        super.onBackPressed()
+    }
+
     override fun onSaveInstanceState(outState: Bundle) {
-        outState.putInt(CURRENT_PAGE, curPage.index)
+        outState.putInt(CURRENT_PAGE, currentPage)
         super.onSaveInstanceState(outState)
     }
 
@@ -92,6 +106,7 @@ class PdfActivity : AppCompatActivity() {
     private fun displayPage(index:Int) {
         if (pdfRenderer.pageCount <= index) return
         curPage.close()
+        currentPage = index
         curPage = pdfRenderer.openPage(index)
         val newWidth = (displayMetrics.widthPixels * curPage.width / 72 * currentZoomLevel / 40).toInt()
         val newHeight = (displayMetrics.heightPixels * curPage.height / 72 * currentZoomLevel / 64).toInt()

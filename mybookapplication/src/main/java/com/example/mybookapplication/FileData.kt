@@ -1,16 +1,17 @@
 package com.example.mybookapplication
 
-import android.arch.persistence.room.Entity
-import android.arch.persistence.room.Index
-import android.arch.persistence.room.PrimaryKey
-import android.arch.persistence.room.TypeConverters
+import androidx.room.Entity
+import androidx.room.Index
+import androidx.room.PrimaryKey
+import androidx.room.TypeConverters
 import java.util.*
 
-@Entity(indices = [Index(value="FilePath", unique = true)])
+@Entity(indices = [Index(value=["FilePath"], unique = true)])
 data class FileData (
     var FileName:String = "",
     var FilePath:String = "",
     var CurPage:Int = 0,
+    var Pages:Int = 0,
     var Size:String = "",
     @TypeConverters(DateConverter::class)
     var DateOfAdding: Date?,

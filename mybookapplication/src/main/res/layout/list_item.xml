@@ -14,24 +14,22 @@
                         android:layout_margin="4dp">
             <TextView
                     android:id="@+id/txtFileName"
-                    android:text="Name"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:paddingBottom="5dp"
                     android:textColor="#000000"
                     android:textSize="16sp"/>
             <TextView
-                    android:id="@+id/txtFileAuthor"
+                    android:id="@+id/txtFileSize"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Author"
                     android:textColor="@android:color/darker_gray"
                     android:textSize="16sp"
                     android:layout_below="@id/txtFileName"/>
             <LinearLayout android:layout_width="match_parent"
                           android:layout_height="wrap_content"
                           android:orientation="horizontal"
-                          android:layout_below="@id/txtFileAuthor">
+                          android:layout_below="@id/txtFileSize">
                 <ProgressBar android:id="@+id/progressBar"
                              style="?android:attr/progressBarStyleHorizontal"
                              android:max="100"

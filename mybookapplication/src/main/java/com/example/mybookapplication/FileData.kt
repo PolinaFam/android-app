@@ -12,7 +12,7 @@ data class FileData (
     var FilePath:String = "",
     var CurPage:Int = 0,
     var Pages:Int = 0,
-    var Size:String = "",
+    var Size:Long = 0,
     @TypeConverters(DateConverter::class)
     var DateOfAdding: Date?,
     var Fav:Boolean = false,

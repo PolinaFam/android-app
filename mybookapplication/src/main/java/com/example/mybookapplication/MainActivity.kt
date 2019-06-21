@@ -27,7 +27,6 @@ import java.util.*
 
 class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener, FileListAdapter.OnBtnClickListener {
 
-    //private val REQUEST_PERMISSION = 1
     private lateinit var viewModel: ListViewModel
     private val REQUEST_FILE = 103
     private val REQUEST_PAGE = 1
@@ -68,7 +67,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         itemTouchHelper.attachToRecyclerView(recyclerView)
 
         viewModel = ViewModelProviders.of(this).get(ListViewModel::class.java)
-        viewModel.allFiles.observe(this,Observer {
+        viewModel.Files.observe(this,Observer {
             files -> files?.let { adapter.setFiles(it)}
         })
 
@@ -85,13 +84,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         toggle.syncState()
 
         nav_view.setNavigationItemSelectedListener(this)
-/*
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-          checkPermission()
-        }
-        else {
-            initViews()
-        }*/
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -108,7 +100,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                     FilePath = i.location.toString(),
                     CurPage = 0,
                     Pages = pdfRenderer.pageCount,
-                    Size = i.size!!.toString(),
+                    Size = file.length(),
                     DateOfAdding = Calendar.getInstance().time,
                     Fav = false,
                     HaveRead = false,
@@ -116,7 +108,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 viewModel.insert(fileData)
                 pdfRenderer.close()
                 descriptor.close()
-                Toast.makeText(this, "Added.", Toast.LENGTH_LONG)
+                Toast.makeText(this, "Добавлено.", Toast.LENGTH_LONG)
                 .show()
             }
         }
@@ -128,98 +120,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             viewModel.findForUpdate(resultId,resultPage)
         }
     }
-
-  /*  //проверка доступа
-    private fun checkPermission() {
-        val permissionR = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
-        val permissionW = ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
-        if (permissionR == PackageManager.PERMISSION_GRANTED && permissionW == PackageManager.PERMISSION_GRANTED) {
-            initViews()
-        }
-        else {
-            ActivityCompat.requestPermissions(this,
-                arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE),
-                REQUEST_PERMISSION)
-        }
-    }
-
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
-        when (requestCode) {
-            REQUEST_PERMISSION -> {
-                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    initViews()
-                } else {
-                    if (ActivityCompat.shouldShowRequestPermissionRationale(
-                            this,
-                            Manifest.permission.READ_EXTERNAL_STORAGE
-                        )
-                    ) {
-                        showDialogOK("Service Permissions are required for this app",
-                            DialogInterface.OnClickListener { _, which ->
-                                when (which) {
-                                    DialogInterface.BUTTON_POSITIVE -> checkPermission()
-                                    DialogInterface.BUTTON_NEGATIVE -> finish()
-                                }
-                            })
-                    } else {
-                        val dialog = androidx.appcompat.app.AlertDialog.Builder(this)
-                        dialog.setMessage("You need to give some mandatory permissions to continue. Do you want to go to app settings?")
-                            .setPositiveButton("Yes") { _, _ ->
-                                startActivity(Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:com.example.mybookapplication")))
-                            }
-                            .setNegativeButton("Cancel") { _, _ -> finish() }
-                        dialog.show()
-                    }
-
-                }
-            }
-        }
-    }
-
-    private fun showDialogOK(message: String, okListener: DialogInterface.OnClickListener) {
-        AlertDialog.Builder(this)
-            .setMessage(message)
-            .setPositiveButton("OK", okListener)
-            .setNegativeButton("Cancel", okListener)
-            .create()
-            .show()
-    }
-
-    private fun initViews(){
-        //val path:String = Environment.getExternalStorageDirectory().absolutePath
-        //initList(path)
-
-        listView?.setOnItemClickListener {_,_, position,_ ->
-            val selectedFile = list[position]
-            val readIntent = Intent(this, PdfActivity::class.java)
-            readIntent.putExtra("keyname",selectedFile.FileName)
-            readIntent.putExtra("filename",selectedFile.FilePath)
-            startActivity(readIntent)
-        }
-    }
-
-    //возможно оставить функцию для сканирования всех pdf файлов
-    /*private fun initList(path: String) {
-        val file = File(path)
-        val fileList: Array<File> = file.listFiles()
-        var fileName: String
-        for (f in fileList) {
-            if (f.isDirectory) {
-                initList(f.absolutePath)
-            } else {
-                fileName = f.name
-                if (fileName.endsWith(".pdf")) {
-                    list.add(FileData(FileName=fileName,
-                        FilePath = f.absolutePath,
-                        CurPage = 0,
-                        Fav = false,
-                        HaveRead = false,
-                        Wishes = false))
-                }
-            }
-        }
-    }*/
-*/
     override fun onBackPressed() {
         if (drawer_layout.isDrawerOpen(GravityCompat.START)) {
             drawer_layout.closeDrawer(GravityCompat.START)
@@ -234,23 +134,19 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     }
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
-            R.id.action_settings -> return true
             R.id.menuSortName -> {
-                /*item.setChecked(true)
-                list.clear()
-                list.addAll(db?.fileDataDao()!!.sortName())
-                adapter.notifyDataSetChanged() //это нужно будет поменять!!!*/
+                item.setChecked(true)
+                viewModel.sortList("Name")
                 return true
             }
             R.id.menuSortSize -> {
-                //item.setChecked(true)
+                item.setChecked(true)
+                viewModel.sortList("Size")
                 return true
             }
             R.id.menuSortDate -> {
-                /*item.setChecked(true)
-                list.clear()
-                list.addAll(db?.fileDataDao()!!.sortDate())
-                adapter.notifyDataSetChanged()*/
+                item.setChecked(true)
+                viewModel.sortList("Date")
                 return true
             }
             else -> return super.onOptionsItemSelected(item)
@@ -259,18 +155,16 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             R.id.nav_library -> {
+                viewModel.changeList("All")
             }
             R.id.nav_favourite -> {
-                adapter.setFilterFiles("Fav")
+                viewModel.changeList("Fav")
             }
             R.id.nav_wishes -> {
-                adapter.setFilterFiles("Wish")
+                viewModel.changeList("Wish")
             }
             R.id.nav_finished -> {
-                adapter.setFilterFiles("Fin")
-            }
-            R.id.nav_tool -> {
-
+                viewModel.changeList("Fin")
             }
             R.id.nav_exit -> {
                 finish()

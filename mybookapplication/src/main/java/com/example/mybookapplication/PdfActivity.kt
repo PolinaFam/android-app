@@ -13,8 +13,7 @@ import android.widget.Toast
 import java.lang.Exception
 import android.os.ParcelFileDescriptor
 import android.util.DisplayMetrics
-import android.widget.ImageButton
-import android.widget.ImageView
+import kotlinx.android.synthetic.main.activity_pdf.*
 import java.io.File
 import java.io.IOException
 
@@ -22,11 +21,6 @@ class PdfActivity : AppCompatActivity() {
    private lateinit var pdfRenderer:PdfRenderer
     private lateinit var curPage:PdfRenderer.Page
     private lateinit var descriptor: ParcelFileDescriptor
-    private lateinit var imgView: ImageView
-    private lateinit var btnPrevious: ImageButton
-    private lateinit var btnNext: ImageButton
-    private lateinit var btnZoomin: ImageButton
-    private lateinit var btnZoomout: ImageButton
     private var currentZoomLevel:Float = 5.0f
     private var currentPage: Int = 0
     private var path: String? = null
@@ -49,16 +43,10 @@ class PdfActivity : AppCompatActivity() {
 
         windowManager.defaultDisplay.getMetrics(displayMetrics)
 
-        imgView = findViewById(R.id.imgView);
-        btnPrevious = findViewById(R.id.btnPrevious);
-        btnNext = findViewById(R.id.btnNext);
-        btnZoomin = findViewById(R.id.zoomin);
-        btnZoomout = findViewById(R.id.zoomout);
-
         btnPrevious.setOnClickListener(clickListener);
         btnNext.setOnClickListener(clickListener);
-        btnZoomin.setOnClickListener(clickListener);
-        btnZoomout.setOnClickListener(clickListener);
+        zoomin.setOnClickListener(clickListener);
+        zoomout.setOnClickListener(clickListener);
     }
 
     override fun onStart() {
@@ -120,8 +108,8 @@ class PdfActivity : AppCompatActivity() {
         val pageCount = pdfRenderer.pageCount
         btnPrevious.isEnabled = (0 != index)
         btnNext.isEnabled = (index + 1 < pageCount)
-        btnZoomout.isEnabled = (currentZoomLevel != 2.0f);
-        btnZoomin.isEnabled = (currentZoomLevel != 12.0f);
+        zoomout.isEnabled = (currentZoomLevel != 2.0f);
+        zoomin.isEnabled = (currentZoomLevel != 12.0f);
 
     }
 

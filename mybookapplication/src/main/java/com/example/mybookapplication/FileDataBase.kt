@@ -17,8 +17,8 @@ public abstract class FileDataBase : RoomDatabase() {
         private var INSTANCE:FileDataBase? = null
 
         fun getDB(context: Context, scope:CoroutineScope):FileDataBase {
-            val tempInstance = INSTANCE
-            if (tempInstance != null) {
+           val tempInstance = INSTANCE
+           if (tempInstance != null) {
                 return tempInstance
             }
             synchronized(this) {
@@ -30,6 +30,9 @@ public abstract class FileDataBase : RoomDatabase() {
                 INSTANCE = instance
                 return instance
             }
+        }
+        fun deleteDB(context: Context){
+            context.deleteDatabase("file.db")
         }
     }
 }

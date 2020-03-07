@@ -1,6 +1,7 @@
 package com.example.mybookapplication
 
 import android.app.Application
+import android.content.Context
 import androidx.lifecycle.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -42,6 +43,9 @@ class ListViewModel(application: Application) : AndroidViewModel(application){
     fun delete(file:FileData) = viewModelScope.launch(Dispatchers.IO) {
         repository.delete(file)
     }
+/*    fun deleteDB(context:Context){
+        FileDataBase.deleteDB(context)
+    }*/
     fun update(file:FileData) = viewModelScope.launch(Dispatchers.IO) {
         repository.update(file)
     }

@@ -12,6 +12,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.ParcelFileDescriptor
+import android.provider.MediaStore
 import com.google.android.material.navigation.NavigationView
 import androidx.core.view.GravityCompat
 import androidx.appcompat.app.ActionBarDrawerToggle
@@ -32,6 +33,9 @@ import kotlinx.android.synthetic.main.app_bar_main.*
 import org.jetbrains.anko.startActivity
 import java.io.File
 import java.util.*
+import android.provider.OpenableColumns
+import org.jetbrains.anko.toast
+import java.io.FileNotFoundException
 
 
 class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener, FileListAdapter.OnBtnClickListener {
@@ -80,7 +84,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         viewModel.Files.observe(this,Observer {
             files -> files?.let { adapter.setFiles(it)}
         })
-
         fab.setOnClickListener {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 if (handlePermissionCheck()) {
@@ -147,35 +150,45 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-
         if (REQUEST_FILE == requestCode && resultCode == Activity.RESULT_OK) {
-           /*val result = data?.getParcelableArrayListExtra<KotResult>(KotConstants.EXTRA_FILE_RESULTS)
-            result!!.forEach { i ->
-                val file = File(i.location.toString())
-                val descriptor = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
-                val pdfRenderer = PdfRenderer(descriptor)
-                val fileData = FileData(FileName=i.name.toString(),
-                    FilePath = i.location.toString(),
-                    CurPage = 0,
-                    //Pages = pdfRenderer.pageCount,
-                    Size = file.length(),
-                    DateOfAdding = Calendar.getInstance().time,
-                    Fav = false,
-                    HaveRead = false,
-                    Wishes = false)
-                viewModel.insert(fileData)
-                pdfRenderer.close()
-                descriptor.close()
-                Toast.makeText(this, "Добавлено.", Toast.LENGTH_LONG)
-                .show()
-                Toast.makeText(this, i.type.toString(), Toast.LENGTH_LONG)
-                    .show()
-                Toast.makeText(this, i.location, Toast.LENGTH_LONG)
-                    .show()
-            }*/
-            val result = data?.data
-            Toast.makeText(this, result?.path, Toast.LENGTH_LONG)
-                .show()
+            data!!.data?.let { uri ->
+            contentResolver.query(uri, null, null, null, null)
+            }?.use { cursor ->
+                val name = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                val location = data.data?.path
+                var pages = 0
+                val size = cursor.getColumnIndex(OpenableColumns.SIZE)
+                val file = File(data.data?.path)
+                Toast.makeText(this, data.data?.path,Toast.LENGTH_LONG).show()
+                val format = contentResolver.getType(data.data!!)
+                cursor.moveToFirst()
+                //TODO: получать количество страниц
+/*                    if (format == "application/pdf") {
+                        try {
+                        val descriptor = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
+                        val pdfRenderer = PdfRenderer(descriptor)
+                        pages = pdfRenderer.pageCount
+                        pdfRenderer.close()
+                        descriptor.close()
+                        }
+                        catch (e: FileNotFoundException) {
+                        Toast.makeText(this, "Невозможно добавить файл",Toast.LENGTH_LONG).show()
+                        }
+                    }*/
+                    val fileData = FileData(
+                        FileName=cursor.getString(name),
+                        FilePath = location.toString(),
+                        CurPage = 0,
+                        Pages = pages,
+                        Size = cursor.getLong(size),
+                        Format = "",
+                        DateOfAdding = Calendar.getInstance().time,
+                        Fav = false,
+                        HaveRead = false,
+                        Wishes = false)
+                    println("FILE " + fileData)
+                    viewModel.insert(fileData)
+            }
         }
         if (REQUEST_PAGE == requestCode && resultCode == Activity.RESULT_OK) {
             val resultIdStr = data?.extras?.getString("fileId")
@@ -185,6 +198,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             viewModel.findForUpdate(resultId,resultPage)
         }
     }
+
     override fun onBackPressed() {
         if (drawer_layout.isDrawerOpen(GravityCompat.START)) {
             drawer_layout.closeDrawer(GravityCompat.START)

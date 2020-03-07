@@ -75,13 +75,15 @@ class FileListAdapter(val context: Context, val listener: OnBtnClickListener):
                 val position = adapterPosition
                 if (position != RecyclerView.NO_POSITION) {
                     val selectedFile = filesList[position]
-                    val intent = Intent(context,PdfActivity::class.java).apply {
-                        putExtra("fileId",selectedFile.id.toString())
-                        putExtra("keyname",selectedFile.FileName)
-                        putExtra("filename",selectedFile.FilePath)
-                        putExtra("currentPage",selectedFile.CurPage.toString())
+                    if (selectedFile.Format == "application/pdf") {
+                        val intent = Intent(context,PdfActivity::class.java).apply {
+                            putExtra("fileId",selectedFile.id.toString())
+                            putExtra("keyname",selectedFile.FileName)
+                            putExtra("filename",selectedFile.FilePath)
+                            putExtra("currentPage",selectedFile.CurPage.toString())
+                        }
+                        (context as MainActivity).startActivityForResult(intent,REQUEST_PAGE)
                     }
-                    (context as MainActivity).startActivityForResult(intent,REQUEST_PAGE)
                 }
         }
     }

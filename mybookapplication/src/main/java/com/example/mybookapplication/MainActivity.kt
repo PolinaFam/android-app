@@ -2,16 +2,18 @@ package com.example.mybookapplication
 
 import android.Manifest
 import android.app.Activity
-import android.content.DialogInterface
+import android.content.*
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
-import android.content.Intent
 import android.content.pm.PackageManager
+import android.database.CursorIndexOutOfBoundsException
 import android.graphics.pdf.PdfRenderer
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Environment
 import android.os.ParcelFileDescriptor
+import android.provider.DocumentsContract
 import android.provider.MediaStore
 import com.google.android.material.navigation.NavigationView
 import androidx.core.view.GravityCompat
@@ -36,6 +38,15 @@ import java.util.*
 import android.provider.OpenableColumns
 import org.jetbrains.anko.toast
 import java.io.FileNotFoundException
+import android.content.*
+import android.database.Cursor
+import android.provider.MediaStore.Files.getContentUri
+import android.provider.Settings
+import androidx.core.content.FileProvider
+import android.text.TextUtils
+import android.webkit.MimeTypeMap
+import java.text.SimpleDateFormat
+import java.util.regex.Pattern
 
 
 class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener, FileListAdapter.OnBtnClickListener {
@@ -122,9 +133,108 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         intent.setType("*/*")
         val mimetypes = arrayOf("application/pdf", "application/epub+zip")
         intent.putExtra(Intent.EXTRA_MIME_TYPES, mimetypes)
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        intent.addCategory(Intent.CATEGORY_OPENABLE)
         startActivityForResult(intent, REQUEST_FILE)
     }
+    @SuppressWarnings("NewApi")
+    private fun readPathFromUri(context: Context, uri: Uri): String? {
 
+        // DocumentProvider
+        if (DocumentsContract.isDocumentUri(context, uri)) {
+            // ExternalStorageProvider
+            if (isExternalStorageDocument(uri)) {
+                val docId = DocumentsContract.getDocumentId(uri)
+                val split = docId.split(":".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+                val type = split[0]
+
+                if ("primary".equals(type, ignoreCase = true)) {
+                    return Environment.getExternalStorageDirectory().toString() + "/" + split[1]
+                }
+            } else if (isDownloadsDocument(uri)) {
+                val id = DocumentsContract.getDocumentId(uri)
+                val contentUri = ContentUris.withAppendedId(
+                    Uri.parse("content://downloads/public_downloads"), java.lang.Long.valueOf(id)!!)
+
+                return getDataColumn(context, contentUri, null, null)
+            } else if (isMediaDocument(uri)) {
+                val docId = DocumentsContract.getDocumentId(uri)
+                val split = docId.split(":".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+                val type = split[0]
+
+                val contentUri = getContentUri(type)
+
+                val selection = "_id=?"
+                val selectionArgs = arrayOf(split[1])
+                return getDataColumn(context, contentUri, selection, selectionArgs)
+            }// MediaProvider
+            // DownloadsProvider
+        } else if ("content".equals(uri.scheme, ignoreCase = true)) {
+            // Return the remote address
+            return if (isGooglePhotosUri(uri)) {
+                uri.lastPathSegment
+            } else getDataColumn(context, uri, null, null)
+        } else if ("file".equals(uri.scheme, ignoreCase = true)) {
+            return uri.path
+        }
+
+        return null
+    }
+
+    private fun isDownloadsDocument(uri: Uri): Boolean {
+        return "com.android.providers.downloads.documents" == uri.authority
+    }
+
+    private fun isExternalStorageDocument(uri: Uri): Boolean {
+        return "com.android.externalstorage.documents" == uri.authority
+    }
+
+    private fun isMediaDocument(uri: Uri): Boolean {
+        return "com.android.providers.media.documents" == uri.authority
+    }
+
+    private fun isGooglePhotosUri(uri: Uri): Boolean {
+        return "com.google.android.apps.photos.content" == uri.authority
+    }
+
+    private fun getDataColumn(context: Context, uri: Uri?, selection: String?, selectionArgs: Array<String>?): String? {
+        var cursor: Cursor? = null
+        val column = MediaStore.Images.Media.DATA
+        val projection = arrayOf(column)
+
+        try {
+            cursor = context.contentResolver.query(uri, projection, selection, selectionArgs, null)
+            if (cursor != null && cursor!!.moveToFirst()) {
+                val column_index = cursor!!.getColumnIndexOrThrow(column)
+                return cursor!!.getString(column_index)
+            }
+        } catch (e: IllegalArgumentException) {
+            e.printStackTrace()
+        } finally {
+            if (cursor != null) {
+                cursor!!.close()
+            }
+        }
+        return null
+    }
+
+    fun getFileDetails(context: Context, uri: Uri): File? {
+        //get the details from uri
+        var fileToReturn: File? = null
+        try {
+            fileToReturn = File(readPathFromUri(context, uri))
+        } catch (exp: CursorIndexOutOfBoundsException) {
+            exp.printStackTrace()
+            fileToReturn = File(uri.path)
+        } catch (exp: NullPointerException) {
+            exp.printStackTrace()
+            fileToReturn = File(uri.path)
+        } catch (exp: NumberFormatException) {
+            exp.printStackTrace()
+            fileToReturn = File(uri.path)
+        }
+        return fileToReturn
+    }
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (REQUEST_PERMISSION == requestCode) {
@@ -151,44 +261,38 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (REQUEST_FILE == requestCode && resultCode == Activity.RESULT_OK) {
-            data!!.data?.let { uri ->
-            contentResolver.query(uri, null, null, null, null)
-            }?.use { cursor ->
-                val name = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-                val location = data.data?.path
-                var pages = 0
-                val size = cursor.getColumnIndex(OpenableColumns.SIZE)
-                val file = File(data.data?.path)
-                Toast.makeText(this, data.data?.path,Toast.LENGTH_LONG).show()
-                val format = contentResolver.getType(data.data!!)
-                cursor.moveToFirst()
-                //TODO: получать количество страниц
-/*                    if (format == "application/pdf") {
-                        try {
-                        val descriptor = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
-                        val pdfRenderer = PdfRenderer(descriptor)
-                        pages = pdfRenderer.pageCount
-                        pdfRenderer.close()
-                        descriptor.close()
-                        }
-                        catch (e: FileNotFoundException) {
-                        Toast.makeText(this, "Невозможно добавить файл",Toast.LENGTH_LONG).show()
-                        }
-                    }*/
-                    val fileData = FileData(
-                        FileName=cursor.getString(name),
-                        FilePath = location.toString(),
-                        CurPage = 0,
-                        Pages = pages,
-                        Size = cursor.getLong(size),
-                        Format = "",
-                        DateOfAdding = Calendar.getInstance().time,
-                        Fav = false,
-                        HaveRead = false,
-                        Wishes = false)
-                    println("FILE " + fileData)
-                    viewModel.insert(fileData)
+            val file = getFileDetails(this, data!!.data!!)
+            val fileSize = file!!.length()
+            val fileName = file.name
+            val fileLocation = file.path
+            val fileMimeType = contentResolver.getType(data.data!!)!!
+            var filePages = 0
+            Toast.makeText(this, fileMimeType,Toast.LENGTH_LONG).show()
+            if (fileMimeType == "application/pdf") {
+                try {
+                    val descriptor = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
+                    val pdfRenderer = PdfRenderer(descriptor)
+                    filePages = pdfRenderer.pageCount
+                    pdfRenderer.close()
+                    descriptor.close()
+                }
+                catch (e: FileNotFoundException) {
+                    Toast.makeText(this, "Невозможно добавить файл",Toast.LENGTH_LONG).show()
+                }
             }
+            val fileData = FileData(
+                FileName=fileName,
+                FilePath = fileLocation,
+                CurPage = 0,
+                Pages = filePages,
+                Size = fileSize,
+                Format = fileMimeType,
+                DateOfAdding = Calendar.getInstance().time,
+                Fav = false,
+                HaveRead = false,
+                Wishes = false)
+            println("FILE " + fileData)
+            viewModel.insert(fileData)
         }
         if (REQUEST_PAGE == requestCode && resultCode == Activity.RESULT_OK) {
             val resultIdStr = data?.extras?.getString("fileId")

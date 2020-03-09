@@ -44,9 +44,13 @@ import android.provider.MediaStore.Files.getContentUri
 import android.provider.Settings
 import androidx.core.content.FileProvider
 import android.text.TextUtils
+import android.view.View
 import android.webkit.MimeTypeMap
 import java.text.SimpleDateFormat
 import java.util.regex.Pattern
+import android.view.ViewStub;
+import android.widget.AdapterView
+import android.widget.GridView
 
 
 class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener, FileListAdapter.OnBtnClickListener {
@@ -55,7 +59,19 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     private val REQUEST_PERMISSION = 2
     private val REQUEST_FILE = 103
     private val REQUEST_PAGE = 1
+    private val VIEW_MODE_LISTVIEW = 0
+    private val VIEW_MODE_GRIDVIEW = 1
+
     private lateinit var adapter:FileListAdapter
+    private lateinit var stubList: ViewStub
+    private lateinit var stubGrid: ViewStub
+    private lateinit var recyclerView: RecyclerView
+    private lateinit var gridView: GridView
+
+    private lateinit var listAdapter:FileListAdapter
+    private lateinit var gridAdapter:FileGridAdapter
+    private lateinit var sharedPrefernces: SharedPreferences
+    private var currentViewMode = 0;
 
     override fun onFavButtonClick(file:FileData) {
         file.Fav = !file.Fav
@@ -73,28 +89,29 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        println("AAAAAAAAAAAAAAAAAAAAAAAAAAA")
         setContentView(R.layout.activity_main)
         setSupportActionBar(toolbar)
+        println("AAAAAAAAAAAAAAAAAAAAAAAAAAA")
 
-        val recyclerView = findViewById<RecyclerView>(R.id.recyclerview)
-        adapter = FileListAdapter(this, this)
-        recyclerView.addItemDecoration(DividerItemDecoration(this, DividerItemDecoration.VERTICAL))
-        recyclerView.adapter = adapter
-        recyclerView.layoutManager = LinearLayoutManager(this)
 
-        val swipeHandler = object : SwipeToDeleteCallback(this) {
-            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
-                val delFile = adapter.getItem(viewHolder.adapterPosition)
-                viewModel.delete(delFile)
-            }
-        }
-        val itemTouchHelper = ItemTouchHelper(swipeHandler)
-        itemTouchHelper.attachToRecyclerView(recyclerView)
+        stubList = findViewById(R.id.stub_list)
+        stubGrid = findViewById(R.id.stub_grid)
+        stubList.inflate()
+        stubGrid.inflate()
 
-        viewModel = ViewModelProviders.of(this).get(ListViewModel::class.java)
-        viewModel.Files.observe(this,Observer {
-            files -> files?.let { adapter.setFiles(it)}
-        })
+        gridView = findViewById(R.id.grid_view)
+        recyclerView = findViewById(R.id.recycler_view)
+
+
+        sharedPrefernces = getSharedPreferences("ViewMode", Context.MODE_PRIVATE)
+        currentViewMode = sharedPrefernces.getInt("currentViewMode", VIEW_MODE_LISTVIEW)
+
+        //recyclerView.setOnItemClickListener(onItemClick);
+        //gridView.setOnItemClickListener(onItemClick);
+
+        switchView();
+
         fab.setOnClickListener {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 if (handlePermissionCheck()) {
@@ -116,6 +133,52 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         toggle.syncState()
 
         nav_view.setNavigationItemSelectedListener(this)
+    }
+
+    private fun switchView() {
+        if(VIEW_MODE_LISTVIEW == currentViewMode) {
+            //Display listview
+            stubList.setVisibility(View.VISIBLE);
+            //Hide gridview
+            stubGrid.setVisibility(View.GONE);
+        } else {
+            //Hide listview
+            stubList.setVisibility(View.GONE);
+            //Display gridview
+            stubGrid.setVisibility(View.VISIBLE);
+        }
+        setAdapters();
+    }
+
+    private fun setAdapters() {
+        if (VIEW_MODE_LISTVIEW == currentViewMode) {
+            listAdapter = FileListAdapter(this, this)
+            recyclerView.addItemDecoration(DividerItemDecoration(this, DividerItemDecoration.VERTICAL))
+            recyclerView.adapter = listAdapter
+            recyclerView.layoutManager = LinearLayoutManager(this)
+
+            val swipeHandler = object : SwipeToDeleteCallback(this) {
+                override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
+                    val delFile = listAdapter.getItem(viewHolder.adapterPosition)
+                    viewModel.delete(delFile)
+                }
+            }
+            val itemTouchHelper = ItemTouchHelper(swipeHandler)
+            itemTouchHelper.attachToRecyclerView(recyclerView)
+
+            viewModel = ViewModelProviders.of(this).get(ListViewModel::class.java)
+            viewModel.Files.observe(this,Observer {
+                    files -> files?.let { listAdapter.setFiles(it)}
+            })
+        } else {
+            gridAdapter = FileGridAdapter(this)
+            gridView.adapter = gridAdapter
+
+            viewModel = ViewModelProviders.of(this).get(ListViewModel::class.java)
+            viewModel.Files.observe(this,Observer {
+                    files -> files?.let { gridAdapter.setFiles(it)}
+            })
+        }
     }
 
     private fun handlePermissionCheck(): Boolean {
@@ -208,7 +271,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 val column_index = cursor!!.getColumnIndexOrThrow(column)
                 return cursor!!.getString(column_index)
             }
-        } catch (e: IllegalArgumentException) {
+        } catch (e: Throwable) {
             e.printStackTrace()
         } finally {
             if (cursor != null) {
@@ -235,6 +298,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         }
         return fileToReturn
     }
+
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (REQUEST_PERMISSION == requestCode) {
@@ -315,8 +379,24 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         menuInflater.inflate(R.menu.main, menu)
         return true
     }
+
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
+            R.id.switch_view -> {
+                if(VIEW_MODE_LISTVIEW == currentViewMode) {
+                    currentViewMode = VIEW_MODE_GRIDVIEW;
+                } else {
+                    currentViewMode = VIEW_MODE_LISTVIEW;
+                }
+                //Switch view
+                switchView();
+                //Save view mode in share reference
+                sharedPrefernces = getSharedPreferences("ViewMode", MODE_PRIVATE);
+                val editor = sharedPrefernces.edit();
+                editor.putInt("currentViewMode", currentViewMode);
+                editor.apply();
+                return true
+            }
             R.id.menuSortName -> {
                 item.setChecked(true)
                 viewModel.sortList("Name")
@@ -335,6 +415,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             else -> return super.onOptionsItemSelected(item)
         }
     }
+
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             R.id.nav_library -> {

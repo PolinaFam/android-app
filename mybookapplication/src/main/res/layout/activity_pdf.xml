@@ -58,7 +58,7 @@
                 android:src="@drawable/ic_arrow_forward_black_24dp"/>
 
         <ImageButton
-                android:id="@+id/zoomout"
+                android:id="@+id/zoom_out"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_vertical"
@@ -71,7 +71,7 @@
         />
 
         <ImageButton
-                android:id="@+id/zoomin"
+                android:id="@+id/zoom_in"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_vertical"

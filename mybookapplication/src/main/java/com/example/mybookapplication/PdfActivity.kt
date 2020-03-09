@@ -45,8 +45,8 @@ class PdfActivity : AppCompatActivity() {
 
         btnPrevious.setOnClickListener(clickListener);
         btnNext.setOnClickListener(clickListener);
-        zoomin.setOnClickListener(clickListener);
-        zoomout.setOnClickListener(clickListener);
+        zoom_in.setOnClickListener(clickListener);
+        zoom_out.setOnClickListener(clickListener);
     }
 
     override fun onStart() {
@@ -108,8 +108,8 @@ class PdfActivity : AppCompatActivity() {
         val pageCount = pdfRenderer.pageCount
         btnPrevious.isEnabled = (0 != index)
         btnNext.isEnabled = (index + 1 < pageCount)
-        zoomout.isEnabled = (currentZoomLevel != 2.0f);
-        zoomin.isEnabled = (currentZoomLevel != 12.0f);
+        zoom_out.isEnabled = (currentZoomLevel != 2.0f);
+        zoom_in.isEnabled = (currentZoomLevel != 12.0f);
 
     }
 
@@ -129,11 +129,11 @@ class PdfActivity : AppCompatActivity() {
             R.id.btnNext -> {
                 displayPage(curPage.index + 1)
             }
-            R.id.zoomin -> {
+            R.id.zoom_in -> {
                 currentZoomLevel++
                 displayPage(curPage.index)
             }
-            R.id.zoomout -> {
+            R.id.zoom_out -> {
                 currentZoomLevel--
                 displayPage(curPage.index)
             }

@@ -1,5 +1,6 @@
 package com.example.mybookapplication
 
+import android.graphics.Bitmap
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey

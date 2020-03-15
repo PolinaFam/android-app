@@ -51,6 +51,7 @@ import java.util.regex.Pattern
 import android.view.ViewStub;
 import android.widget.AdapterView
 import android.widget.GridView
+import com.github.mertakdut.Reader
 
 
 class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener, FileListAdapter.OnBtnClickListener {
@@ -89,11 +90,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        println("AAAAAAAAAAAAAAAAAAAAAAAAAAA")
         setContentView(R.layout.activity_main)
         setSupportActionBar(toolbar)
-        println("AAAAAAAAAAAAAAAAAAAAAAAAAAA")
-
 
         stubList = findViewById(R.id.stub_list)
         stubGrid = findViewById(R.id.stub_grid)
@@ -327,11 +325,19 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         if (REQUEST_FILE == requestCode && resultCode == Activity.RESULT_OK) {
             val file = getFileDetails(this, data!!.data!!)
             val fileSize = file!!.length()
-            val fileName = file.name
-            val fileLocation = file.path
             val fileMimeType = contentResolver.getType(data.data!!)!!
+            var fileName = file.name
+
+            if (fileMimeType == "application/epub+zip") {
+                val reader = Reader()
+                reader.setInfoContent(file.path)
+                val title = reader.infoPackage.metadata.title
+                if (title != null && title != "") {
+                    fileName = title
+                }
+            }
+            val fileLocation = file.path
             var filePages = 0
-            Toast.makeText(this, fileMimeType,Toast.LENGTH_LONG).show()
             if (fileMimeType == "application/pdf") {
                 try {
                     val descriptor = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
@@ -355,7 +361,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 Fav = false,
                 HaveRead = false,
                 Wishes = false)
-            println("FILE " + fileData)
             viewModel.insert(fileData)
         }
         if (REQUEST_PAGE == requestCode && resultCode == Activity.RESULT_OK) {

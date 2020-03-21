@@ -16,6 +16,9 @@
         <item
                 android:id="@+id/nav_finished"
                 android:title="@string/finished" android:icon="@drawable/ic_finished_black_24dp"/>
+        <item
+                android:id="@+id/nav_scan"
+                android:title="@string/scan"/>
     </group>
         <item   android:title="@string/other">
             <menu>

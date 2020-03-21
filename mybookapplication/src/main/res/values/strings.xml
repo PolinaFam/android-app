@@ -16,4 +16,5 @@
     <string name="other">Прочее</string>
     <string name="tool">Настройки</string>
     <string name="exit">Выйти</string>
+    <string name="scan">Сканировать память</string>
 </resources>

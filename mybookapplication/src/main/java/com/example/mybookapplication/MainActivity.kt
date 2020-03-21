@@ -52,6 +52,11 @@ import android.view.ViewStub;
 import android.widget.AdapterView
 import android.widget.GridView
 import com.github.mertakdut.Reader
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.IOException
 
 
 class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener, FileListAdapter.OnBtnClickListener {
@@ -320,48 +325,58 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         }
     }
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (REQUEST_FILE == requestCode && resultCode == Activity.RESULT_OK) {
-            val file = getFileDetails(this, data!!.data!!)
-            val fileSize = file!!.length()
-            val fileMimeType = contentResolver.getType(data.data!!)!!
-            var fileName = file.name
+    private fun addFile(file: File, fileType: String){
+        val fileSize = file.length()
+        val fileMimeType = fileType
+        var fileName = file.name
 
-            if (fileMimeType == "application/epub+zip") {
-                val reader = Reader()
-                reader.setInfoContent(file.path)
-                val title = reader.infoPackage.metadata.title
-                if (title != null && title != "") {
-                    fileName = title
-                }
+        if (fileMimeType == "application/epub+zip") {
+            val reader = Reader()
+            reader.setInfoContent(file.absolutePath)
+            val title = reader.infoPackage.metadata.title
+            if (title != null && title != "") {
+                fileName = title
             }
-            val fileLocation = file.path
-            var filePages = 0
-            if (fileMimeType == "application/pdf") {
+        }
+        val fileLocation = file.absolutePath
+        var filePages = 0
+        if (fileMimeType == "application/pdf") {
+            try {
+                val descriptor = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
                 try {
-                    val descriptor = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
                     val pdfRenderer = PdfRenderer(descriptor)
                     filePages = pdfRenderer.pageCount
                     pdfRenderer.close()
                     descriptor.close()
-                }
-                catch (e: FileNotFoundException) {
-                    Toast.makeText(this, "Невозможно добавить файл",Toast.LENGTH_LONG).show()
+                } catch (e: IOException) {
+                    println(file.name)
+                    return
                 }
             }
-            val fileData = FileData(
-                FileName=fileName,
-                FilePath = fileLocation,
-                CurPage = 0,
-                Pages = filePages,
-                Size = fileSize,
-                Format = fileMimeType,
-                DateOfAdding = Calendar.getInstance().time,
-                Fav = false,
-                HaveRead = false,
-                Wishes = false)
-            viewModel.insert(fileData)
+            catch (e: FileNotFoundException) {
+                return
+            }
+        }
+        val fileData = FileData(
+            FileName=fileName,
+            FilePath = fileLocation,
+            CurPage = 0,
+            Pages = filePages,
+            Size = fileSize,
+            Format = fileMimeType,
+            DateOfAdding = Calendar.getInstance().time,
+            Fav = false,
+            HaveRead = false,
+            Wishes = false)
+        viewModel.insert(fileData)
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (REQUEST_FILE == requestCode && resultCode == Activity.RESULT_OK) {
+            val file = getFileDetails(this, data!!.data!!)
+            val fileMimeType = contentResolver.getType(data.data!!)!!
+            addFile(file!!, fileMimeType)
         }
         if (REQUEST_PAGE == requestCode && resultCode == Activity.RESULT_OK) {
             val resultIdStr = data?.extras?.getString("fileId")
@@ -421,6 +436,27 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         }
     }
 
+    private suspend fun initList(path: String) {
+        val file = File(path)
+        val fileList: Array<File> = file.listFiles()
+
+        for (f in fileList) {
+            if (f.isDirectory) {
+                initList(f.absolutePath)
+            } else {
+                val uri = Uri.fromFile(f);
+                val fileExtension = MimeTypeMap.getFileExtensionFromUrl(uri.toString());
+                val fileMimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(fileExtension);
+                if (fileMimeType == "application/pdf" || fileMimeType == "application/epub+zip"){
+                    println(fileMimeType)
+                    addFile(f, fileMimeType)
+                }
+            }
+        }
+
+    }
+
+
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             R.id.nav_library -> {
@@ -434,6 +470,12 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             }
             R.id.nav_finished -> {
                 viewModel.changeList("Fin")
+            }
+            R.id.nav_scan -> {
+                val path:String = Environment.getExternalStorageDirectory().absolutePath
+                GlobalScope.launch {
+                    initList(path)
+                }
             }
             R.id.nav_exit -> {
                 finish()

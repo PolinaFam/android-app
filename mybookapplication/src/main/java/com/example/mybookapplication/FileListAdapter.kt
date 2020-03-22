@@ -83,6 +83,12 @@ class FileListAdapter(val context: Context, val listener: OnBtnClickListener):
                             putExtra("currentPage",selectedFile.CurPage.toString())
                         }
                         (context as MainActivity).startActivityForResult(intent,REQUEST_PAGE)
+                    } else if (selectedFile.Format == "application/epub+zip") {
+                        val intent = Intent(context, EpubActivity::class.java).apply {
+                            putExtra("filename", selectedFile.FileName)
+                            putExtra("filepath", selectedFile.FilePath)
+                        }
+                        (context as MainActivity).startActivity(intent)
                     }
                 }
         }

@@ -21,7 +21,6 @@ import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AppCompatActivity
 import android.view.Menu
 import android.view.MenuItem
-import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -29,33 +28,21 @@ import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.androidbuffer.kotlinfilepicker.*
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.app_bar_main.*
-import org.jetbrains.anko.startActivity
 import java.io.File
 import java.util.*
-import android.provider.OpenableColumns
-import org.jetbrains.anko.toast
 import java.io.FileNotFoundException
-import android.content.*
 import android.database.Cursor
 import android.provider.MediaStore.Files.getContentUri
-import android.provider.Settings
-import androidx.core.content.FileProvider
-import android.text.TextUtils
 import android.view.View
 import android.webkit.MimeTypeMap
-import java.text.SimpleDateFormat
-import java.util.regex.Pattern
 import android.view.ViewStub;
 import android.widget.AdapterView
 import android.widget.GridView
 import com.github.mertakdut.Reader
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.io.IOException
 
 
@@ -68,7 +55,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     private val VIEW_MODE_LISTVIEW = 0
     private val VIEW_MODE_GRIDVIEW = 1
 
-    private lateinit var adapter:FileListAdapter
     private lateinit var stubList: ViewStub
     private lateinit var stubGrid: ViewStub
     private lateinit var recyclerView: RecyclerView
@@ -109,9 +95,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
         sharedPrefernces = getSharedPreferences("ViewMode", Context.MODE_PRIVATE)
         currentViewMode = sharedPrefernces.getInt("currentViewMode", VIEW_MODE_LISTVIEW)
-
-        //recyclerView.setOnItemClickListener(onItemClick);
-        //gridView.setOnItemClickListener(onItemClick);
 
         switchView();
 
@@ -176,6 +159,27 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         } else {
             gridAdapter = FileGridAdapter(this)
             gridView.adapter = gridAdapter
+
+            gridView.onItemClickListener =
+                AdapterView.OnItemClickListener { parent, view, position, id ->
+                    val clickedItem = gridAdapter.getItem(position)
+                    if (clickedItem.Format == "application/epub+zip") {
+                        val intent = Intent(this@MainActivity, EpubActivity::class.java).apply {
+                            putExtra("filename", clickedItem.FileName)
+                            putExtra("filepath", clickedItem.FilePath)
+                        }
+                        this@MainActivity.startActivity(intent)
+                    } else if (clickedItem.Format == "application/pdf"){
+                        val intent = Intent(this@MainActivity,PdfActivity::class.java).apply {
+                            putExtra("fileId",clickedItem.id.toString())
+                            putExtra("keyname",clickedItem.FileName)
+                            putExtra("filename",clickedItem.FilePath)
+                            putExtra("currentPage",clickedItem.CurPage.toString())
+                        }
+                        this@MainActivity.startActivityForResult(intent,REQUEST_PAGE)
+                    }
+                }
+
 
             viewModel = ViewModelProviders.of(this).get(ListViewModel::class.java)
             viewModel.Files.observe(this,Observer {
@@ -326,49 +330,48 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     }
 
     private fun addFile(file: File, fileType: String){
-        val fileSize = file.length()
-        val fileMimeType = fileType
-        var fileName = file.name
-
-        if (fileMimeType == "application/epub+zip") {
-            val reader = Reader()
-            reader.setInfoContent(file.absolutePath)
-            val title = reader.infoPackage.metadata.title
-            if (title != null && title != "") {
-                fileName = title
-            }
-        }
-        val fileLocation = file.absolutePath
-        var filePages = 0
-        if (fileMimeType == "application/pdf") {
-            try {
-                val descriptor = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
-                try {
-                    val pdfRenderer = PdfRenderer(descriptor)
-                    filePages = pdfRenderer.pageCount
-                    pdfRenderer.close()
-                    descriptor.close()
-                } catch (e: IOException) {
-                    println(file.name)
-                    return
+        try {
+            val fileSize = file.length()
+            val fileMimeType = fileType
+            var fileName = file.name
+            println("FILENAME")
+            println(fileName)
+            println("FILEPATH")
+            println(file.path)
+            if (fileMimeType == "application/epub+zip") {
+                val reader = Reader()
+                reader.setInfoContent(file.absolutePath)
+                val title = reader.infoPackage.metadata.title
+                if (title != null && title != "") {
+                    fileName = title
                 }
             }
-            catch (e: FileNotFoundException) {
-                return
+            val fileLocation = file.absolutePath
+            var filePages = 0
+            if (fileMimeType == "application/pdf") {
+                val descriptor =
+                    ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
+                val pdfRenderer = PdfRenderer(descriptor)
+                filePages = pdfRenderer.pageCount
+                pdfRenderer.close()
+                descriptor.close()
             }
+            val fileData = FileData(
+                FileName=fileName,
+                FilePath = fileLocation,
+                CurPage = 0,
+                Pages = filePages,
+                Size = fileSize,
+                Format = fileMimeType,
+                DateOfAdding = Calendar.getInstance().time,
+                Fav = false,
+                HaveRead = false,
+                Wishes = false)
+            viewModel.insert(fileData)
+
+        } catch (e: FileNotFoundException) {
+            e.printStackTrace()
         }
-        val fileData = FileData(
-            FileName=fileName,
-            FilePath = fileLocation,
-            CurPage = 0,
-            Pages = filePages,
-            Size = fileSize,
-            Format = fileMimeType,
-            DateOfAdding = Calendar.getInstance().time,
-            Fav = false,
-            HaveRead = false,
-            Wishes = false)
-        viewModel.insert(fileData)
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -448,7 +451,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 val fileExtension = MimeTypeMap.getFileExtensionFromUrl(uri.toString());
                 val fileMimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(fileExtension);
                 if (fileMimeType == "application/pdf" || fileMimeType == "application/epub+zip"){
-                    println(fileMimeType)
                     addFile(f, fileMimeType)
                 }
             }

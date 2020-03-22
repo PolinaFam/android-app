@@ -6,7 +6,6 @@ android {
     compileSdkVersion 28
 
 
-
     defaultConfig {
         applicationId "com.example.mybookapplication"
         minSdkVersion 21

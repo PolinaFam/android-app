@@ -42,6 +42,7 @@ class FileGridAdapter(val context: Context):BaseAdapter() {
         } else {
             viewHolder = myView.getTag() as ViewHolder
         }
+
         //set Image Cover
         if (filesList[position].Format == "application/epub+zip") {
             val reader = Reader()
@@ -49,8 +50,8 @@ class FileGridAdapter(val context: Context):BaseAdapter() {
 
             val coverImageAsBytes = reader.coverImage
             if (coverImageAsBytes != null) {
-                val bitmap = decodeBitmapFromByteArray(coverImageAsBytes, 100, 200)
-                viewHolder.coverImage!!.setImageBitmap(bitmap)
+                val bitmap = decodeBitmapFromByteArray(coverImageAsBytes)
+                viewHolder.coverImage!!.setImageBitmap(Bitmap.createScaledBitmap(bitmap, 330, 465, false))
             } else {
                 viewHolder.coverImage!!.setImageResource(R.drawable.ic_book)
             }
@@ -79,43 +80,19 @@ class FileGridAdapter(val context: Context):BaseAdapter() {
         return myView
     }
 
-    private fun decodeBitmapFromByteArray(coverImage: ByteArray, reqWidth: Int, reqHeight: Int): Bitmap? {
+    private fun decodeBitmapFromByteArray(coverImage: ByteArray): Bitmap {
 
         val options = BitmapFactory.Options()
         options.inJustDecodeBounds = true
         BitmapFactory.decodeByteArray(coverImage, 0, coverImage.size, options)
-
-        options.inSampleSize = calculateInSampleSize(options, reqWidth, reqHeight)
-
         options.inJustDecodeBounds = false
         return BitmapFactory.decodeByteArray(coverImage, 0, coverImage.size, options)
     }
 
-    private fun calculateInSampleSize(options: BitmapFactory.Options, reqWidth: Int, reqHeight: Int) :Int {
-
-        val height = options.outHeight
-        val width = options.outWidth
-        var inSampleSize = 1
-
-        if (height > reqHeight || width > reqWidth) {
-            val halfHeight = height / 2
-            val halfWidth = width / 2
-
-            while (halfHeight / inSampleSize > reqHeight
-                && halfWidth / inSampleSize > reqWidth
-            ) {
-                inSampleSize *= 2
-            }
-        }
-
-        return inSampleSize
-    }
-
     //Auto Generated Method
-    override fun getItem(p0: Int): Any {
+    override fun getItem(p0: Int): FileData {
         return filesList.get(p0)
     }
-
     //Auto Generated Method
     override fun getItemId(p0: Int): Long {
         return 0

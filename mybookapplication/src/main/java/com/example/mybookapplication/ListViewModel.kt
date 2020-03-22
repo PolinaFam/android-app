@@ -43,9 +43,6 @@ class ListViewModel(application: Application) : AndroidViewModel(application){
     fun delete(file:FileData) = viewModelScope.launch(Dispatchers.IO) {
         repository.delete(file)
     }
-/*    fun deleteDB(context:Context){
-        FileDataBase.deleteDB(context)
-    }*/
     fun update(file:FileData) = viewModelScope.launch(Dispatchers.IO) {
         repository.update(file)
     }

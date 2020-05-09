@@ -2,11 +2,13 @@ package com.example.mybookapplication
 
 import android.content.Context
 import android.content.Intent
+import android.os.Environment
 import androidx.recyclerview.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import kotlinx.android.synthetic.main.list_item.view.*
+import java.io.File
 
 class FileListAdapter(val context: Context, val listener: OnBtnClickListener):
     RecyclerView.Adapter<FileListAdapter.FileViewHolder>() {
@@ -104,4 +106,10 @@ class FileListAdapter(val context: Context, val listener: OnBtnClickListener):
     }
 
     override fun getItemCount() = filesList.size
+
+    fun deleteImageCover(file: FileData) {
+        val fileName = file.FileName.replace(".pdf", "") + ".png"
+        val path = Environment.getExternalStorageDirectory().toString() + "/BookCovers/" + fileName
+        File(path).delete()
+    }
 }

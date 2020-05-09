@@ -10,8 +10,7 @@
         android:layout_height="155dp"
         android:layout_centerHorizontal="true"
         android:adjustViewBounds="true"
-        android:scaleType="centerInside"
-        android:src="@android:drawable/alert_light_frame"
+        android:scaleType="fitXY"
         tools:ignore="ContentDescription"
         android:padding="2dp"
         android:background="@layout/image_border"/>

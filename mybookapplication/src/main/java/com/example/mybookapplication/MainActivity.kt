@@ -146,6 +146,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             val swipeHandler = object : SwipeToDeleteCallback(this) {
                 override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
                     val delFile = listAdapter.getItem(viewHolder.adapterPosition)
+                    listAdapter.deleteImageCover(delFile)
                     viewModel.delete(delFile)
                 }
             }
@@ -267,22 +268,22 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         return "com.google.android.apps.photos.content" == uri.authority
     }
 
-    private fun getDataColumn(context: Context, uri: Uri?, selection: String?, selectionArgs: Array<String>?): String? {
+    private fun getDataColumn(context: Context, uri: Uri, selection: String?, selectionArgs: Array<String>?): String? {
         var cursor: Cursor? = null
         val column = MediaStore.Images.Media.DATA
         val projection = arrayOf(column)
 
         try {
             cursor = context.contentResolver.query(uri, projection, selection, selectionArgs, null)
-            if (cursor != null && cursor!!.moveToFirst()) {
-                val column_index = cursor!!.getColumnIndexOrThrow(column)
-                return cursor!!.getString(column_index)
+            if (cursor != null && cursor.moveToFirst()) {
+                val column_index = cursor.getColumnIndexOrThrow(column)
+                return cursor.getString(column_index)
             }
         } catch (e: Throwable) {
             e.printStackTrace()
         } finally {
             if (cursor != null) {
-                cursor!!.close()
+                cursor.close()
             }
         }
         return null
@@ -334,10 +335,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             val fileSize = file.length()
             val fileMimeType = fileType
             var fileName = file.name
-            println("FILENAME")
-            println(fileName)
-            println("FILEPATH")
-            println(file.path)
             if (fileMimeType == "application/epub+zip") {
                 val reader = Reader()
                 reader.setInfoContent(file.absolutePath)
